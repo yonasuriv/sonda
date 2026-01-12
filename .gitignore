@@ -1,3 +1,4 @@
+# Python
 modules/visor/.venv/
 modules/visor/.idea/
 modules/visor/__pycache__/
@@ -12,4 +13,44 @@ modules/visor/build/
 modules/visor/dist/
 modules/visor/Pipfile.lock
 modules/visor/Pipfile
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Debian package build artifacts
+debian/sonda/
+debian/.debhelper/
+debian/files
+debian/substvars
+debian/*.debhelper.log
+debian/*.substvars
+debian/*.debhelper
+debian/*.log
+debian/debhelper-build-stamp
+*.deb
+*.buildinfo
+*.changes
+*.dsc
+*.tar.gz
+*.tar.xz
+
+# Logs
+*.log
+logs/
+.logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
 

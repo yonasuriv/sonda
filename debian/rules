@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Install files to debian/sonda/usr/share/sonda
+	mkdir -p debian/sonda/usr/share/sonda
+	cp -r bin lib modules static debian/sonda/usr/share/sonda/
+	# Install binary to /usr/bin
+	mkdir -p debian/sonda/usr/bin
+	cp bin/sonda debian/sonda/usr/bin/
+	chmod +x debian/sonda/usr/bin/sonda
+	# Install desktop file
+	mkdir -p debian/sonda/usr/share/applications
+	cp static/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
+	# Install icon
+	mkdir -p debian/sonda/usr/share/pixmaps
+	cp static/icons/sonda.png debian/sonda/usr/share/pixmaps/
+	# Install version file
+	mkdir -p debian/sonda/usr/share/sonda/lib/version
+	cp lib/version/current debian/sonda/usr/share/sonda/lib/version/
+
+# No Python package to process - all Python deps are in Depends
+
+override_dh_auto_build:
+	# No build step needed for bash scripts
+	@echo "No build step required"

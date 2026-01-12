@@ -1,30 +1,43 @@
 
-    Usage: sonda [options]
+Usage:
+        sonda <command>
+        sonda -T <target> [flags]
+        sonda --update | --upgrade | --version | -h | --help
 
-    Options:
+Commands:
+        sys (default)         Show system information (CPU, memory, devices, etc.)
+        net                   Show network information (interfaces, active connections, etc.)
 
-        -r | --recommends   Check required and recommended system settings
-        -v | --version      Display the version of the Sonda tool
-        -u | --update       Update the Sonda tool to the latest version
+Targets:
+        pkgs                  List all installed packages
+        cpu                   CPU information
+        gpu                   GPU and graphics card information
+        disks*                Disk and storage information (requires sudo for detailed partition info)
+        memory                Memory information (requires sudo for detailed memory usage)
+        kernel                Kernel boot parameters and loaded modules
+        devices               PCI and USB devices
+        network               Network interfaces and active connections
+        battery               Battery status and power information
+        all                   All available system and network information (long output)
+
+Flags:
         
-        -s | -sys           Show system information (CPU, memory, devices, etc.)
-        -n | -net           Show network information (interfaces, active connections, etc.)
+        -v                    Set the output verbosity level (min -v. max -vvv)
+        -s, --save            Save the output to a log file in ~/.logs/sonda/
+        -nc, --no-color       Strip color codes from output
 
-        -G | -sysnet        Combines -s and -n output for both system and network information
+Meta:
+        --update              Check if updates are available (does not update)
+        --upgrade             Update the Sonda tool to the latest version
+        --version             Display the version of the Sonda tool
+        --recommends          Check required and recommended system settings
+        --banner              Display a colorful banner to add at the top of your shell rc file
+        -h,--help             Show this help message and exit
 
-        -v <LEVEL>          Set the verbosity level for output (values 1-8, with 1 being minimal and 8 being maximum)
+Examples:
+        sonda net
+        sonda -T cpu
+        sonda -T all -s -nc -v8
+        sonda --update
 
-        -all                Show all available system and network information (long output)
-        -ald                Show detailed system and network information (very long output)
-
-        -battery            Show battery status and power information
-        -cpu                Show detailed CPU information
-        -devices            Show information about PCI and USB devices
-        -disks*             Show disk and storage information (requires sudo for detailed partition info)
-        -gpu                Show GPU and graphics card information
-        -kernel             Show kernel boot parameters and loaded modules
-        -memory*            Show memory information (requires sudo for detailed memory usage)
-        -network            Show detailed information about network interfaces and active connections
-        -packages           List all installed packages
-
-        --SAVE              Save the output to a log file (currently disabled)
+!NOTES: All targets requireS -T, flags can be used with any target and only with -T.

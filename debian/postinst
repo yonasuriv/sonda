@@ -1,0 +1,35 @@
+#!/bin/bash
+# postinst script for sonda
+
+set -e
+
+# Update desktop database
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q 2>/dev/null || true
+fi
+
+# Update icon cache
+if command -v update-icon-caches >/dev/null 2>&1; then
+    update-icon-caches /usr/share/pixmaps 2>/dev/null || true
+elif command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/pixmaps 2>/dev/null || true
+fi
+
+# Create log directory for users
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    USER_HOME="$HOME"
+fi
+
+if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
+    mkdir -p "$USER_HOME/.logs/sonda" 2>/dev/null || true
+    chown -R "$SUDO_USER:$SUDO_USER" "$USER_HOME/.logs/sonda" 2>/dev/null || true
+fi
+
+echo "Sonda installed successfully!"
+echo "Run 'sonda --help' to see available options."
+
+#DEBHELPER#
+
+exit 0

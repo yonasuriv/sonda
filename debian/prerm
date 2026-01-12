@@ -1,0 +1,8 @@
+#!/bin/bash
+# prerm script for sonda
+
+set -e
+
+#DEBHELPER#
+
+exit 0

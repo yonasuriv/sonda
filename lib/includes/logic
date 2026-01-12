@@ -13,10 +13,10 @@ function system_info {
     # [+] CATEGORY: System Information
 
     # Fetch the hostname from /etc/hostname
-    hostname=$(cat /etc/hostname)
+    hostname=$(read_system_file "/etc/hostname")
 
     # Fetch static hostname from /proc/sys/kernel/hostname
-    static_hostname=$(cat /proc/sys/kernel/hostname)
+    static_hostname=$(read_system_file "/proc/sys/kernel/hostname")
 
     # Fetch distribution information from /etc/os-release
     os_name=$(grep "^NAME=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
@@ -44,9 +44,9 @@ function system_info {
 
     # Fetch kernel name and version
     kernel_name=$(uname -s)
-    kernel_version=$(cat /proc/version | awk '{print $3}')
-    kernel_release=$(cat /proc/sys/kernel/osrelease)
-    kernel_version_full=$(cat /proc/sys/kernel/version)
+    kernel_version=$(read_system_file "/proc/version" | awk '{print $3}' || echo "Unknown")
+    kernel_release=$(read_system_file "/proc/sys/kernel/osrelease")
+    kernel_version_full=$(read_system_file "/proc/sys/kernel/version")
 
     # [+] CATEGORY: Hardware Information
 
@@ -74,16 +74,24 @@ function system_info {
     firmware_version=$(read_system_file "/sys/class/dmi/id/bios_version")
 
     # Fetch firmware date from /sys/class/dmi/id/bios_date
-    firmware_date=$(cat /sys/class/dmi/id/bios_date)
+    firmware_date=$(read_system_file "/sys/class/dmi/id/bios_date")
 
     # Get the current date in seconds since the epoch
     current_date_seconds=$(date +%s)
 
     # Get the firmware date in seconds since the epoch
-    firmware_date_seconds=$(date -d "$firmware_date" +%s)
-
-    # Calculate the difference in seconds
-    seconds_diff=$((current_date_seconds - firmware_date_seconds))
+    if [[ "$firmware_date" != "Unknown" ]] && [[ -n "$firmware_date" ]]; then
+        firmware_date_seconds=$(date -d "$firmware_date" +%s 2>/dev/null || echo "0")
+        # Calculate the difference in seconds
+        if [[ "$firmware_date_seconds" != "0" ]] && [[ "$firmware_date_seconds" =~ ^[0-9]+$ ]]; then
+            seconds_diff=$((current_date_seconds - firmware_date_seconds))
+        else
+            seconds_diff=0
+        fi
+    else
+        firmware_date_seconds="0"
+        seconds_diff=0
+    fi
 
     # Perform floating-point division to convert seconds to months using awk
     firmware_age_in_months=$(awk "BEGIN {print $seconds_diff / (60*60*24*30.44)}")
@@ -181,12 +189,13 @@ function system_info {
     # [+] CATEGORY: System Identifiers
 
     # Fetch machine ID
-    machine_id=$(cat /etc/machine-id)
+    machine_id=$(read_system_file "/etc/machine-id")
 
     # Fetch boot ID
-    boot_id=$(cat /proc/sys/kernel/random/boot_id)
+    boot_id=$(read_system_file "/proc/sys/kernel/random/boot_id")
 
     stats_cpu_mem_disk() {
+        local line1=""  # Initialize line1 to avoid unbound variable error with set -u
         cpu_usage=$(mpstat | awk 'NR==4 {print "User: "$3 "%, System: "$5 "%, Idle: "$12 "%"}')
 
         memory_usage=$(free -h | awk 'NR==2 {print "Total: "$2 ", Used: "$3 ", Free: "$4 ", Available: "$7}')
@@ -296,7 +305,12 @@ function system_info {
 
     # Function to calculate time since the last update
     calculate_time_since_last_update() {
-        if [ "$LAST_UPDATE_DATE" != "Unavailable" ]; then
+        # Initialize LAST_UPDATE_DATE if not set
+        if [[ -z "${LAST_UPDATE_DATE:-}" ]]; then
+            LAST_UPDATE_DATE=$(grep -E "Start-Date:" /var/log/apt/history.log 2>/dev/null | tail -1 | sed 's/Start-Date: //' || echo "Unavailable")
+        fi
+        
+        if [[ -n "${LAST_UPDATE_DATE:-}" ]] && [[ "$LAST_UPDATE_DATE" != "Unavailable" ]]; then
             CURRENT_TIMESTAMP=$(date +%s)
             LAST_UPDATE_TIMESTAMP=$(date -d "$LAST_UPDATE_DATE" +%s)
             TIME_DIFF=$((CURRENT_TIMESTAMP - LAST_UPDATE_TIMESTAMP))
@@ -318,14 +332,14 @@ function system_info {
     }
 
     firmware_type="$([ -d /sys/firmware/efi ] && echo "UEFI" || echo "BIOS")"
-    firmware_vendor="$(cat /sys/class/dmi/id/bios_vendor)"
-    firmware_version="$(cat /sys/class/dmi/id/bios_version)"
-    firmware_release="$(cat /sys/class/dmi/id/bios_release)"
+    firmware_vendor="$(read_system_file "/sys/class/dmi/id/bios_vendor")"
+    firmware_version="$(read_system_file "/sys/class/dmi/id/bios_version")"
+    firmware_release="$(read_system_file "/sys/class/dmi/id/bios_release")"
 
     full_firmware="$firmware_type version $firmware_version, revision $firmware_release"
 
-    board_name="$(cat /sys/class/dmi/id/board_name)"
-    board_vendor="$(cat /sys/class/dmi/id/board_vendor)"
+    board_name="$(read_system_file "/sys/class/dmi/id/board_name")"
+    board_vendor="$(read_system_file "/sys/class/dmi/id/board_vendor")"
 
     # Function to display partition details in the requested format
     get_disk() {
@@ -376,9 +390,26 @@ function system_info {
     fi
 
     # UPDATE
-    if [[ "$DAYS" -ge 15 ]]; then
+    # Initialize DAYS if not set (from calculate_time_since_last_update)
+    if [[ -z "${DAYS:-}" ]]; then
+        # Try to calculate if LAST_UPDATE_DATE is available
+        if [[ -n "${LAST_UPDATE_DATE:-}" ]] && [[ "$LAST_UPDATE_DATE" != "Unavailable" ]]; then
+            CURRENT_TIMESTAMP=$(date +%s)
+            LAST_UPDATE_TIMESTAMP=$(date -d "$LAST_UPDATE_DATE" +%s 2>/dev/null || echo "0")
+            if [[ "$LAST_UPDATE_TIMESTAMP" != "0" ]] && [[ "$LAST_UPDATE_TIMESTAMP" =~ ^[0-9]+$ ]]; then
+                TIME_DIFF=$((CURRENT_TIMESTAMP - LAST_UPDATE_TIMESTAMP))
+                DAYS=$((TIME_DIFF / 86400))
+            else
+                DAYS=0
+            fi
+        else
+            DAYS=0
+        fi
+    fi
+    
+    if [[ "${DAYS:-0}" -ge 15 ]]; then
         update_recommended=$(echo -e "${RED2}[UPDATE RECOMMENDED] ${RT}")
-    elif [[ "$DAYS" -ge 5 ]] && [[ "$DAYS" -le 14 ]]; then
+    elif [[ "${DAYS:-0}" -ge 5 ]] && [[ "${DAYS:-0}" -le 14 ]]; then
         update_recommended=$(echo -e "${YELLOW2}[UPDATE RECOMMENDED] ${RT}")
     else
         update_recommended="[+]"

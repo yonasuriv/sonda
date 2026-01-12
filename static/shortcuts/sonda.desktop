@@ -1,10 +1,12 @@
 [Desktop Entry]
-Name=Sonda
-Encoding=UTF-8
-Exec=sonda
-Icon=/usr/share/sonda/static/icons/sonda.png
-StartupNotify=false
-Terminal=true
+Version=1.0
 Type=Application
+Name=Sonda
 Comment=System & Network Sensor, on steroids.
-Path=/usr/bin/sonda
+Exec=sonda
+Icon=sonda
+Terminal=true
+Categories=System;Monitor;Utility;
+Keywords=system;network;monitor;information;hardware;
+StartupNotify=false
+Path=/usr/bin

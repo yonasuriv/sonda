@@ -1,0 +1,44 @@
+Source: sonda
+Section: utils
+Priority: optional
+Maintainer: yonasuriv <yonasuriv@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13), dh-python, python3-all
+Standards-Version: 4.6.2
+Homepage: https://github.com/yonasuriv/sonda
+Vcs-Browser: https://github.com/yonasuriv/sonda
+Vcs-Git: https://github.com/yonasuriv/sonda.git
+
+Package: sonda
+Architecture: all
+Depends: ${misc:Depends},
+         bash (>= 4.0),
+         curl,
+         git,
+         python3,
+         python3-psutil,
+         python3-requests,
+         python3-colorama,
+         inxi,
+         pciutils,
+         net-tools,
+         sysstat,
+         mesa-utils,
+         upower,
+         wmctrl,
+         x11-xserver-utils,
+         libglib2.0-bin,
+         lolcat
+Recommends: python3-pip
+Description: System and Network Information Tool
+ Sonda is a comprehensive system information utility for Linux that provides
+ real-time monitoring and detailed system/network information in a clean,
+ terminal-based interface.
+ .
+ Features:
+  - System information (CPU, RAM, storage, hardware specs)
+  - Network details (interfaces, IPs, connections, firewall status)
+  - Package management monitoring
+  - Real-time system health monitoring
+  - Process viewer
+  - Clean, readable terminal interface
+  - Modular, extensible architecture

@@ -23,7 +23,6 @@ echo -e " |  Hardware:               $hardware_model ($hardware_vendor)"
 echo -e " |  Firmware:               $full_firmware, release $firmware_date ($firmware_age old)"
 echo -e " |  System Identifier:      BOOT ID: $boot_id, MACHINE ID: $machine_id${RT}"
 echo -e " |  "
-echo -e "[+] ${NKBRCYAN}$manual_pkgs${RT} packages installed by user, ${NKBRCYAN}$default_pkgs${RT} from OS, ${NKBRCYAN}$total_pkgs${RT} total. ${DIM}Last installed:${RT} $(lastipkgs)${LB}"
 
 #####################################################################################
 echo -e "[┬] ${WHITE2}System Performance ${RT}"                           ##
@@ -34,3 +33,7 @@ echo -e " |  "
 stats_cpu_mem_disk
 echo -e " |  "
 echo -e "[+] ${NKBRCYAN}$processes_start${RT} startup processes enabled, ${NKBRCYAN}$processes_running${RT} running (${NKBRCYAN}$services_running${RT} services)${RT}"
+echo -e " |  "
+echo -e "[+] ${NKBRCYAN}$manual_pkgs${RT} packages installed by user, ${NKBRCYAN}$default_pkgs${RT} from OS, ${NKBRCYAN}$total_pkgs${RT} total."
+echo -e " |  "
+echo -e " |  ${DIM}Last installed:${RT} $(lastipkgs)${LB}"

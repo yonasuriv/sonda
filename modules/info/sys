@@ -25,6 +25,12 @@ function complete_system_info {
     if command -v inxi &> /dev/null
     then
         echo -e "${LB}${CYAN}[#] Complete System Information ${BLUE}(inxi -Fz)${RT}${LB}"
-        pprint "inxi -Fz --system --max-wrap 10 --indents 10 -c 37 --width -1 $VLEVEL"
+        # Initialize VLEVEL if not set to avoid unbound variable error
+        local vlevel_arg="${VLEVEL:-}"
+        if [[ -n "$vlevel_arg" ]]; then
+            pprint "inxi -Fz --system --max-wrap 10 --indents 10 -c 37 --width -1 $vlevel_arg"
+        else
+            pprint "inxi -Fz --system --max-wrap 10 --indents 10 -c 37 --width -1"
+        fi
     fi
 }

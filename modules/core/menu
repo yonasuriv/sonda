@@ -30,19 +30,44 @@ else
     security_updates_formatted="no security updates"
 fi
 
+# Calculate uptime if not already set
+if [[ -z "${uptime_days:-}" ]]; then
+    uptime_seconds=$(awk '{print $1}' /proc/uptime 2>/dev/null || echo "0")
+    uptime_days=$(awk -v seconds="$uptime_seconds" 'BEGIN {print int(seconds/86400)}' 2>/dev/null || echo "0")
+fi
+
 # REBOOT
-if [[ "$uptime_days" -ge 6 ]]; then
+if [[ "${uptime_days:-0}" -ge 6 ]]; then
     restart_recommended=$(echo -e "${RED2}[RESTART RECOMMENDED]${RT}")
-elif [[ "$uptime_days" -gt 3 ]]; then
+elif [[ "${uptime_days:-0}" -gt 3 ]]; then
     restart_recommended=$(echo -e "${YELLOW2}[RESTART RECOMMENDED]${RT}")
 else
     restart_recommended=""
 fi
 
+# Calculate DAYS if not already set (for update recommendation)
+if [[ -z "${DAYS:-}" ]]; then
+    # Try to get LAST_UPDATE_DATE from apt history
+    LAST_UPDATE_DATE=$(grep -E "Start-Date:" /var/log/apt/history.log 2>/dev/null | tail -1 | sed 's/Start-Date: //' || echo "Unavailable")
+    
+    if [[ -n "${LAST_UPDATE_DATE:-}" ]] && [[ "$LAST_UPDATE_DATE" != "Unavailable" ]]; then
+        CURRENT_TIMESTAMP=$(date +%s)
+        LAST_UPDATE_TIMESTAMP=$(date -d "$LAST_UPDATE_DATE" +%s 2>/dev/null || echo "0")
+        if [[ "$LAST_UPDATE_TIMESTAMP" != "0" ]] && [[ "$LAST_UPDATE_TIMESTAMP" =~ ^[0-9]+$ ]]; then
+            TIME_DIFF=$((CURRENT_TIMESTAMP - LAST_UPDATE_TIMESTAMP))
+            DAYS=$((TIME_DIFF / 86400))
+        else
+            DAYS=0
+        fi
+    else
+        DAYS=0
+    fi
+fi
+
 # UPDATE
-if [[ "$DAYS" -ge 15 ]]; then
+if [[ "${DAYS:-0}" -ge 15 ]]; then
     update_recommended=$(echo -e "${RED2}[UPDATE RECOMMENDED] ${RT}")
-elif [[ "$DAYS" -ge 5 ]] && [[ "$DAYS" -le 14 ]]; then
+elif [[ "${DAYS:-0}" -ge 5 ]] && [[ "${DAYS:-0}" -le 14 ]]; then
     update_recommended=$(echo -e "${YELLOW2}[UPDATE RECOMMENDED] ${RT}")
 else
     update_recommended=""
