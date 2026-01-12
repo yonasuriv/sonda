@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# Sonda Version Check Module
-# NOTE: This file is kept for potential future use, but the active implementation
-# is now in bin/sonda (check_version_only() and perform_update() functions).
-# 
-# The legacy functions (get_version, get_update, check_versions) have been
-# removed as they are no longer used. The active update functionality is
-# implemented directly in bin/sonda.

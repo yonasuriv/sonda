@@ -2,7 +2,7 @@
 
 .PHONY: clean build install package
 
-VERSION := $(shell cat lib/version/current 2>/dev/null || echo "1.8.2")
+VERSION := $(shell cat version 2>/dev/null || echo "1.8.5")
 DEB_VERSION := $(VERSION)-1
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
 

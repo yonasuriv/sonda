@@ -58,7 +58,8 @@ LIB="$INSTALLDIR/lib"
 MODULES="$INSTALLDIR/modules"
 ASSETS="$INSTALLDIR/assets"
 
-VERSION="$LIB/version"
+# Version file is now in root directory
+VERSION_FILE="$INSTALLDIR/version"
 
 MODBASE="$MODULES/base"
 MODINFO="$MODULES/info"
@@ -74,7 +75,6 @@ BANNER="$MODBASE/banner"
 DEFAULT="$MODBASE/default"
 SYSINFO="$MODBASE/sysinfo"
 NETINFO="$MODBASE/netinfo"
-VERCHECK="$VERSION/check"
 
 # Source required files with error handling
 if [[ -f "$STYLE" ]]; then
@@ -95,11 +95,8 @@ if [[ -f "$LOGO" ]]; then
     source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
 fi
 
-# Version check functions are now implemented directly in this file
-# (check_version_only and perform_update). lib/version/check is no longer needed.
-# if [[ -f "$VERCHECK" ]]; then
-#     source "$VERCHECK" 2>/dev/null || log_warn "Failed to source version check file"
-# fi
+# Version check functions are implemented directly in this file
+# (check_version_only and perform_update)
 
 # Source info modules
 for module in battery cpu devices disks gpu kernel memory network packages; do
@@ -242,11 +239,11 @@ check_version_only() {
     log_info "Checking for updates (check-only mode)"
     
     # Get local version
-    if [[ -f "$VERSION/current" ]]; then
-        local_version=$(cat "$VERSION/current" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
+    if [[ -f "$VERSION_FILE" ]]; then
+        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
     else
         echo -e "${E} Local version file not found.${RT}" >&2
-        log_error "Local version file not found: $VERSION/current"
+        log_error "Local version file not found: $VERSION_FILE"
         return 1
     fi
     
@@ -258,7 +255,7 @@ check_version_only() {
     fi
     
     remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/lib/version/current" \
+        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/version" \
         2>/dev/null | tr -d '\n\r ' || echo "")
     
     if [[ -z "$remote_version" ]]; then
@@ -273,8 +270,8 @@ check_version_only() {
         log_info "Version check: up to date ($local_version)"
         return 0
     else
-        echo -e "${W} ${BLUE}sonda version${RT} ${YELLOW2}$local_version${RT} (upgradable to ${CYAN2}$remote_version${RT})"
-        echo -e "${W} Run ${CYAN}sonda --update${RT} to update.${RT}"
+        echo -e "${W} There is a new version disponible: ${GREEN2}$remote_version${RT} (upgradable from ${YELLOW2}$local_version${RT})\n"
+        echo -e "    Run ${CYAN}sonda --upgrade${RT} to get the latest version.${RT}"
         log_info "Version check: update available ($local_version -> $remote_version)"
         return 2
     fi
@@ -289,8 +286,8 @@ perform_update() {
     log_info "Starting update process"
     
     # Get local version
-    if [[ -f "$VERSION/current" ]]; then
-        local_version=$(cat "$VERSION/current" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
+    if [[ -f "$VERSION_FILE" ]]; then
+        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
     else
         echo -e "${E} Local version file not found.${RT}"
         log_error "Local version file not found"
@@ -310,7 +307,7 @@ perform_update() {
     fi
     
     remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/lib/version/current" \
+        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/version" \
         2>/dev/null | tr -d '\n\r ' || echo "")
     
     if [[ -z "$remote_version" ]]; then
@@ -368,8 +365,8 @@ perform_update() {
         if git pull origin main &>/dev/null; then
             # Verify update
             local new_version
-            if [[ -f "$VERSION/current" ]]; then
-                new_version=$(cat "$VERSION/current" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
+            if [[ -f "$VERSION_FILE" ]]; then
+                new_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
             else
                 new_version="unknown"
             fi

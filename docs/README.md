@@ -1,33 +1,70 @@
 # Sonda Documentation
 
-This directory contains all documentation for the Sonda project.
+This directory contains all documentation for the Sonda system information tool.
 
-## Structure
+## Directory Structure
 
-### Installation & Building
-- **BUILD_DEB.md** - Instructions for building the Debian package
-- **INSTALL_DEB.md** - Installation guide for .deb package
-- **DEBIAN_PACKAGE.md** - Complete Debian package documentation
+### 📦 Installation
+- **README.md** - Main project documentation and overview
+- **SETUP.sh** - Installation script documentation (if available)
+- **INSTALL_DEB.md** - Debian package installation guide
+- **BUILD_DEB.md** - Building Debian packages guide
+- **README_DEB.md** - Debian package specific documentation
 
-### Development
-- **DEVELOPMENT.md** - Code review and best practices
+### 🔧 Development
+- **DEVELOPMENT.md** - Code review and development guidelines
 - **CHECKLIST.md** - Issue tracking checklist
 - **TODO.md** - Development tasks and roadmap
+- **TEST_RESULTS.md** - Test results and validation
 
-### Fixes & Changes
-- **FIXES_APPLIED.md** - Summary of fixes applied
-- **ARGUMENT_FIXES.md** - Fixes for command-line arguments
+### 🐛 Fixes
+- **ARGUMENT_FIXES.md** - Command-line argument fixes
 - **DEB_FIXES.md** - Debian package fixes
 - **FLAGS_FIX.md** - Flag-related fixes
-- **PRETTY_FIXES.md** - Color/styling fixes
+- **PRETTY_FIXES.md** - Output formatting fixes
 - **UNBOUND_VARIABLES_FIX.md** - Variable initialization fixes
-- **TEST_RESULTS.md** - Testing results and issues
+- **FIXES_APPLIED.md** - Summary of all applied fixes
 
-### User Documentation
-- **README_DEB.md** - Quick start guide for Debian package users
+### 📋 Packaging
+- **DEBIAN_PACKAGE.md** - Debian packaging documentation
+
+### 📝 Version & Changes
+- **VERSION_CHANGES.md** - Version file location changes (v1.8.5)
+- **CHANGELOG.md** - Complete version history and changelog
 
 ## Quick Links
 
-- Main README: [../README.md](../README.md)
-- Build package: `make build`
-- Install package: `sudo dpkg -i ../sonda_*.deb`
+- [Main README](../README.md) - Start here for general information
+- [Installation Guide](installation/README.md) - How to install Sonda
+- [Development Guide](development/DEVELOPMENT.md) - For contributors
+- [Fixes Documentation](fixes/FIXES_APPLIED.md) - All bug fixes and improvements
+
+## Version Information
+
+Current version: **1.8.5**
+
+Version file location: `/version` (root directory)
+
+Version checking: The version is checked against the remote repository at:
+`https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/version`
+
+## Project Structure
+
+```
+sonda/
+├── bin/              # Main executable
+├── lib/              # Core libraries
+├── modules/          # Information modules
+├── assets/           # Art, icons, desktop files
+├── debian/           # Debian packaging files
+├── docs/             # Documentation (this directory)
+└── version           # Version file (root)
+```
+
+## Contributing
+
+See [DEVELOPMENT.md](development/DEVELOPMENT.md) for contribution guidelines.
+
+## License
+
+GPL-3.0+ (see LICENSE file in project root)

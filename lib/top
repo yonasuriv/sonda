@@ -3,7 +3,7 @@ export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 logo_sonda_script() {
-echo -e "${LB}    SONDA v$(cat $VERSION/current)"  | lolcat # This is a fast and lightweight system information. For a more detailed information use -s (system) and -n (network). Type -h to view the complete list of commands."
+echo -e "${LB}    SONDA v$(cat $VERSION_FILE 2>/dev/null || echo "unknown")"  | lolcat # This is a fast and lightweight system information. For a more detailed information use -s (system) and -n (network). Type -h to view the complete list of commands."
 echo -e ""
 echo -e "[i] This is a quick and lightweight system information. "
 echo -e "    For more detailed data, use the options '-s' for system information and '-n' for network details. "
