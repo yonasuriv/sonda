@@ -213,9 +213,9 @@ function system_info {
 
 
                 if [ "$usage" -ge 75 ]; then
-                    output="${RED}[$device_name]${RT}${DIM} at ${RED}$usage%${RT}${DIM} ($total total, $used used, $available available)${RT}"
+                    output="${RED}[$device_name]${RT} at ${RED}$usage%${RT} ($total total, $used used, $available available)${RT}"
                 elif [ "$usage" -ge 50 ]; then
-                    output="${YELLOW}[$device_name]${RT}${DIM} at ${YELLOW}$usage%${RT}${DIM} ($total total, $used used, $available available)${RT}"
+                    output="${YELLOW}[$device_name]${RT} at ${YELLOW}$usage%${RT} ($total total, $used used, $available available)${RT}"
                 else
                     output="$device_name at $usage% ($total total, $used used, $available available)${RT}"
                 fi
@@ -447,4 +447,19 @@ function system_recommended {
     gsub(/directories:/, "directories: " reset); 
     gsub(/files:/, "files: " reset); 
     print}'
+}
+
+# Complete System Information Using inxi
+function complete_system_info {
+    # inxi provides a summary of hardware and system details.
+    if command -v inxi &> /dev/null; then
+        echo -e "${LB}${CYAN}[#] Complete System Information ${BLUE}(inxi -Fz)${RT}${LB}"
+        # Initialize VLEVEL if not set to avoid unbound variable error
+        local vlevel_arg="${VLEVEL:-}"
+        if [[ -n "$vlevel_arg" ]]; then
+            pprint "inxi -Fz --system --max-wrap 10 --indents 10 -c 37 --width -1 $vlevel_arg"
+        else
+            pprint "inxi -Fz --system --max-wrap 10 --indents 10 -c 37 --width -1"
+        fi
+    fi
 }
