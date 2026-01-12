@@ -199,8 +199,8 @@ function system_info {
         cpu_usage=$(mpstat | awk 'NR==4 {print "User: "$3 "%, System: "$5 "%, Idle: "$12 "%"}')
 
         memory_usage=$(free -h | awk 'NR==2 {print "Total: "$2 ", Used: "$3 ", Free: "$4 ", Available: "$7}')
-        echo -e " | ${DIM} CPU  $(mpstat | awk 'NR==4 {print "User: "$3 "%, System: "$5 "%, Idle: "$12 "%"}')${RT}" 
-        echo -e " | ${DIM} MEM  $(free -h | awk 'NR==2 {print "Total: "$2 ", Used: "$3 ", Free: "$4 ", Available: "$7}')${RT}"
+        echo -e " |  CPU  $(mpstat | awk 'NR==4 {print "User: "$3 "%, System: "$5 "%, Idle: "$12 "%"}')${RT}" 
+        echo -e " |  MEM  $(free -h | awk 'NR==2 {print "Total: "$2 ", Used: "$3 ", Free: "$4 ", Available: "$7}')${RT}"
         df -h | grep '^/dev/' | while read -r line; do
             device=$(echo "$line" | awk '{print $1}')
             used=$(echo "$line" | awk '{print $3}')
@@ -222,7 +222,7 @@ function system_info {
 
                 # Accumulate output and print two devices per line
                 if [ -z "$line1" ]; then
-                    line1=" | ${DIM} DSK  $output"
+                    line1=" |  DSK  $output"
                 else
                     echo -e "${line1} ${output}"
                     line1=""  # Reset for the next pair
@@ -238,28 +238,65 @@ function system_info {
     #######
     current_date=$(date +"%d-%m-%Y %H:%M:%S")
 
+    # Purpose: Extract recently installed package names from /var/log/apt/history.log safely.
+    # Notes: Outputs packages space-separated, single spaces, no commas.
+
     lastipkgs() {
-        # Get the last installed packages and reverse the order (newer to older)
-        last_installed_pkgs=$(grep "install " /var/log/apt/history.log | tail -10 | awk '{print $4}' | tac)
+    local log="/var/log/apt/history.log"
+    local want="${1:-10}"
 
-        # Initialize an empty string to hold the result
-        output=""
+    [[ -r "$log" ]] || { echo "missing: $log" >&2; return 1; }
 
-        # Loop through each package and check if it's installed
-        for pkg in $last_installed_pkgs; do
-            if which "$pkg" >/dev/null 2>&1; then
-                # Accumulate the output with green color for installed packages
-                output+="$pkg, "
-            else
-                # Accumulate the output with red color for not installed packages
-                : #output+="${CURSIVE}${UNDERLINE}$pkg${RT}, "
-            fi
-        done
+    awk -v want="$want" '
+        function is_opt(t) { return (t ~ /^-/) }
+        function is_deb(t) { return (t ~ /\.deb$/) }
 
-        # Remove the trailing comma and space, then print the output
-        echo -e "${output%, }"
+        /^Commandline:/ {
+        line = substr($0, index($0,$2))
+        gsub(/^[ \t]+/, "", line)
+
+        if (line !~ /(^|[ \t])(apt|apt-get)[ \t]+install([ \t]|$)/) next
+
+        n = split(line, a, /[ \t]+/)
+        for (i = 1; i <= n; i++) {
+            if (a[i] == "apt" || a[i] == "apt-get") continue
+            if (a[i] != "install") continue
+
+            for (j = i + 1; j <= n; j++) {
+            t = a[j]
+
+            if (t == "--") break
+            if (is_opt(t)) {
+                if (t == "-o" && j < n) j++
+                continue
+            }
+            if (is_deb(t)) continue
+            if (t == "sudo") continue
+
+            pkgs[++m] = t
+            }
+            break
+        }
+        }
+
+        END {
+        for (k = m; k >= 1; k--) {
+            p = pkgs[k]
+            if (p == "" || seen[p]++) continue
+            out[++c] = p
+            if (c >= want) break
+        }
+        for (x = 1; x <= c; x++) print out[x]
+        }
+    ' "$log" |
+    while IFS= read -r pkg; do
+        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+        printf '%s\n' "$pkg"
+        fi
+    done |
+    tr '\n' ' ' | sed -E 's/[[:space:]]+$//'
     }
-    
+
     
     # Function to check if OS upgrades are available
     check_os_upgrade_available() {

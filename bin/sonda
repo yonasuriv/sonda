@@ -95,9 +95,11 @@ if [[ -f "$LOGO" ]]; then
     source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
 fi
 
-if [[ -f "$VERCHECK" ]]; then
-    source "$VERCHECK" 2>/dev/null || log_warn "Failed to source version check file"
-fi
+# Version check functions are now implemented directly in this file
+# (check_version_only and perform_update). lib/version/check is no longer needed.
+# if [[ -f "$VERCHECK" ]]; then
+#     source "$VERCHECK" 2>/dev/null || log_warn "Failed to source version check file"
+# fi
 
 # Source info modules
 for module in battery cpu devices disks gpu kernel memory network packages; do
@@ -267,7 +269,7 @@ check_version_only() {
     
     # Compare versions
     if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "${S} ${BLUE}sonda version${RT} $local_version ${GREEN}(running the latest version)${RT}"
+        echo -e "${S} ${BLUE}Sonda version${RT} $local_version ${GREEN}(running the latest version)${RT}"
         log_info "Version check: up to date ($local_version)"
         return 0
     else
