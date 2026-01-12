@@ -101,6 +101,7 @@ gpu_info=$(lspci | grep -i vga | cut -d ':' -f3 | xargs)
 # Fetch Audio model information
 audio_info=$(lspci | grep -i audio | cut -d ':' -f3 | xargs)
 
+
 # Output the information in a formatted way
 echo -e " "
 echo -e "[+] ${WHITE2}System Information ${RT}"

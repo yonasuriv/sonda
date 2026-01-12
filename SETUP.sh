@@ -23,10 +23,10 @@ else
 fi
 
 # Source color definitions if available
-if [[ -f "$SCRIPT_DIR/lib/includes/style" ]]; then
+if [[ -f "$SCRIPT_DIR/lib/style" ]]; then
     # Temporarily disable error handling for sourcing
     set +e
-    source "$SCRIPT_DIR/lib/includes/style" 2>/dev/null
+    source "$SCRIPT_DIR/lib/style" 2>/dev/null
     set -e
 fi
 
@@ -75,8 +75,8 @@ USR_SHARE="/usr/share"
 USR_BIN="/usr/bin"
 BIN_NAME="sonda"
 LOCAL_BIN_NAME="sonda"
-DESKTOP_FILE="static/shortcuts/sonda.desktop"
-ICON_FILE="static/icons/sonda.png"
+DESKTOP_FILE="assets/shortcuts/sonda.desktop"
+ICON_FILE="assets/icons/sonda.png"
 REQUIREMENTS_FILE="requirements.txt"
 
 # Track installed components for rollback

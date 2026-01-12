@@ -19,10 +19,10 @@ fi
 # Priority: 1. Environment variable, 2. System-wide (/usr/share/sonda), 3. Source directory, 4. User local
 if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
     INSTALLDIR="$SONDA_INSTALL_DIR"
-elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/lib/includes/style" ]]; then
+elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/lib/style" ]]; then
     # System-wide installation (Debian package)
     INSTALLDIR="/usr/share/sonda"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/includes/style" ]]; then
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/style" ]]; then
     # Running from source directory
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 else
@@ -31,8 +31,8 @@ else
 fi
 
 # Initialize logging early
-if [[ -f "$INSTALLDIR/lib/includes/logger" ]]; then
-    source "$INSTALLDIR/lib/includes/logger" 2>/dev/null || true
+if [[ -f "$INSTALLDIR/lib/logger" ]]; then
+    source "$INSTALLDIR/lib/logger" 2>/dev/null || true
 else
     # Fallback logging functions if logger not available
     log_error() { echo "[ERROR] $*" >&2; }
@@ -56,23 +56,24 @@ BIN="$INSTALLDIR/bin"
 DEV="$INSTALLDIR/dev"
 LIB="$INSTALLDIR/lib"
 MODULES="$INSTALLDIR/modules"
-STATIC="$INSTALLDIR/static"
+ASSETS="$INSTALLDIR/assets"
 
-INCLUDES="$LIB/includes"
 VERSION="$LIB/version"
 
-MODCORE="$MODULES/core"
+MODBASE="$MODULES/base"
 MODINFO="$MODULES/info"
 
 # FILES
-STYLE="$INCLUDES/style"
-LOGIC="$INCLUDES/logic"
-LOGO="$INCLUDES/top"
+STYLE="$LIB/style"
+LOGIC="$LIB/logic"
+LOGO="$LIB/top"
+LOGGER="$LIB/logger"
+MAN="$LIB/man"
 
-SYSMENU="$MODCORE/menu"
-SYSINFO="$MODCORE/sysinfo"
-NETINFO="$MODCORE/netinfo"
-SYSCHECK="$MODCORE/syscheck"
+BANNER="$MODBASE/banner"
+DEFAULT="$MODBASE/default"
+SYSINFO="$MODBASE/sysinfo"
+NETINFO="$MODBASE/netinfo"
 VERCHECK="$VERSION/check"
 
 # Source required files with error handling
@@ -99,18 +100,16 @@ if [[ -f "$VERCHECK" ]]; then
 fi
 
 # Source info modules
-for module in battery cpu devices disks gpu kernel memory network packages sys; do
+for module in battery cpu devices disks gpu kernel memory network packages; do
     if [[ -f "$MODINFO/$module" ]]; then
         source "$MODINFO/$module" 2>/dev/null || log_warn "Failed to source module: $module"
     fi
 done
 
-# Source syscheck module early (needed for -r option)
-if [[ -f "$SYSCHECK" ]]; then
-    source "$SYSCHECK" 2>/dev/null || log_warn "Failed to source syscheck module"
-fi
+# system_recommended function is now in lib/logic (already sourced above)
+# No need to source syscheck separately
 
-USAGE="$INCLUDES/man"
+USAGE="$MAN"
 
 set +a
 
@@ -297,7 +296,8 @@ perform_update() {
     fi
     
     echo -e "${LB}  +  Checking for updates...${RT}"
-    echo -e "  |  ${DIM}Current version: $local_version${RT}"
+    echo -e ""
+    echo -e "  ${DIM}Current version: $local_version${RT}"
     
     # Get remote version
     if ! command -v curl &> /dev/null; then
@@ -312,19 +312,17 @@ perform_update() {
         2>/dev/null | tr -d '\n\r ' || echo "")
     
     if [[ -z "$remote_version" ]]; then
-        echo -e "  |  ${RED}✗${RT} Failed to retrieve remote version"
-        echo -e "${E} Failed to retrieve remote version. Check your internet connection.${RT}"
+        echo -e "${E} Failed to retrieve remote version.${RT}"
         log_error "Failed to retrieve remote version"
         return 1
     fi
     
-    echo -e "  |  ${DIM}Remote version: $remote_version${RT}"
-    echo -e "  | "
+    echo -e "     ${DIM}Remote version: $remote_version${RT}"
+    echo -e ""
     
     # Compare versions
     if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "  |  ${GREEN}✓${RT} You are running the latest version"
-        echo -e "${LB}${S} ${GREEN}Already up to date (version $local_version)${RT}${LB}"
+        echo -e "${LB}${S} ${GREEN}Already up to date. You are running the latest version ($local_version)${RT}${LB}"
         log_info "Update check: already up to date"
         return 0
     fi
@@ -431,13 +429,13 @@ if [[ $# -eq 0 ]]; then
     if type logo_sonda_script &>/dev/null; then
         logo_sonda_script
     fi
-    if [[ -f "$MODCORE/main" ]]; then
-        source "$MODCORE/main"
+    if [[ -f "$DEFAULT" ]]; then
+        source "$DEFAULT"
     fi
     exit 0
 fi
 
-# Argument handling - New format matching lib/includes/man
+# Argument handling - New format matching lib/man
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
@@ -573,18 +571,11 @@ while [[ $# -gt 0 ]]; do
         
         --recommends)
             log_info "Showing system recommendations (--recommends)"
+            # system_recommended is in lib/logic (already sourced)
             if ! type system_recommended &>/dev/null; then
-                if [[ -f "$SYSCHECK" ]]; then
-                    source "$SYSCHECK" 2>/dev/null || {
-                        echo -e "${E} Failed to source syscheck module.${RT}" >&2
-                        log_error "Failed to source syscheck module"
-                        exit 1
-                    }
-                else
-                    echo -e "${E} System check module not found: $SYSCHECK${RT}" >&2
-                    log_error "System check module not found: $SYSCHECK"
-                    exit 1
-                fi
+                echo -e "${E} system_recommended function not found in lib/logic.${RT}" >&2
+                log_error "system_recommended function not found"
+                exit 1
             fi
             
             if ! command -v inxi &>/dev/null; then

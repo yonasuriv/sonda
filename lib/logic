@@ -415,3 +415,36 @@ function system_info {
         update_recommended="[+]"
     fi
 }
+
+function system_recommended {
+    # Example command (replace this with your actual command)
+    output=$(inxi --recommends 2>&1)
+
+    # Remove the first 5 lines using tail
+    filtered_output=$(echo "$output" | tail -n +6 | head -n -2)
+
+    # Use awk to color "Missing", "Present", and add newlines before and after the dashes
+    echo -e "${LB}$filtered_output" | awk -v yellow="$YELLOW" -v green="$GREEN" -v green2="$GREEN2" -v red="$RED" -v negative="$NEGATIVE" -v reset="$RT" \
+    '
+    {gsub(/(------------------------------------------------------------------------------)/, ""); 
+    gsub(/):/, "):" reset); 
+    gsub(/Missing/, red "Missing" reset); 
+    gsub(/Present/, green "Present" reset); 
+    gsub(/Test: r/, negative "[#] R"); 
+    gsub(/ore tools:/, "ore tools" reset); 
+    gsub(/Test: c/, negative "[#] C"); 
+    gsub(/The following recommended/, yellow "[!] " reset "The following recommended");
+    gsub(/All required/, green2 "[✔] "  "All required"); 
+    gsub(/All recommended/, green2 "[✔] "  "All recommended"); 
+    gsub(/are missing:/, "are missing: \n"); 
+    gsub(/are present/, "are present " reset);
+    gsub(/system directories:/, "system directories: " reset); 
+    gsub(/system programs:/, "system programs: " reset); 
+    gsub(/display information programs:/, "display information programs: " reset); 
+    gsub(/downloader programs (You only need one of these):/, reset "downloader programs: " ); 
+    gsub(/kernel modules:/, "kernel modules: " reset); 
+    gsub(/Perl modules (Optional):/, "Perl modules: " reset); 
+    gsub(/directories:/, "directories: " reset); 
+    gsub(/files:/, "files: " reset); 
+    print}'
+}

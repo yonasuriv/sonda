@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # if [ $(find /var/log/apt/history.log -type f -mtime -1 2>/dev/null) ]; then
 #     :
 # else

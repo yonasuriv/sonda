@@ -11,7 +11,7 @@ echo -e "    Type '-h' to see the full list of available commands."
 }
 
 logo_sonda_sysnet() {
-bash $STATIC/art/sonda_sysnet_1 | lolcat
+bash $ASSETS/art/sonda_sysnet_1 | lolcat
 }
 
 
@@ -27,15 +27,15 @@ bash $STATIC/art/sonda_sysnet_1 | lolcat
 # # Choose one of the 4 variables based on the random number
 # case $random_choice in
 #     0)
-#         source $STATIC/art/isometric1.sh | lolcat
+#         source $ASSETS/art/isometric1.sh | lolcat
 #         ;;
 #     1)
-#         source $STATIC/art/isometric2.sh | lolcat
+#         source $ASSETS/art/isometric2.sh | lolcat
 #         ;;
 #     2)
-#         source $STATIC/art/isometric3.sh | lolcat
+#         source $ASSETS/art/isometric3.sh | lolcat
 #         ;;
 #     3)
-#         source $STATIC/art/isometric4.sh | lolcat
+#         source $ASSETS/art/isometric4.sh | lolcat
 #         ;;
 # esac
