@@ -6,7 +6,12 @@
 #     sudo apt update > /dev/null 2>&1
 # fi
 
-net_status=$(ping -c 1 1.1.1.1 > /dev/null 2>&1 && echo -e "${NKBRGREEN}[NETWORK CONNECTED]${RT}" || echo -e "${NKBRRED}[NO INTERNET]${RT}")
+# Use enhanced network status if get_network_status function is available
+if command -v curl >/dev/null 2>&1 && type get_network_status >/dev/null 2>&1; then
+    net_status=$(get_network_status)
+else
+    net_status=$(ping -c 1 1.1.1.1 > /dev/null 2>&1 && echo -e "${NKBRGREEN}[NETWORK CONNECTED]${RT}" || echo -e "${NKBRRED}[NO INTERNET]${RT}")
+fi
 
 # Get number of packages available to be upgraded
 UPGRADABLE=$(apt list --upgradable 2>/dev/null | grep -v "Listing..." | wc -l)
