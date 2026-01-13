@@ -538,7 +538,6 @@ function system_recommended {
     gsub(/directories:/, "directories: " reset); 
     gsub(/files:/, "files: " reset); 
     print}'
-<<<<<<< HEAD
 }
 
 # Complete System Information Using inxi
