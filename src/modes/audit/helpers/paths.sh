@@ -67,7 +67,7 @@ if [[ -n "${AUDIT_LIB:-}" ]]; then
     AUDIT_SRC_DIR="${AUDIT_SRC_DIR:-$INSTALLDIR}"
 else
     # Fallback: calculate paths if sonda.conf wasn't loaded
-    if [[ -z "$AUDIT_PROJECT_ROOT" ]]; then
+    if [[ -z "${AUDIT_PROJECT_ROOT:-}" ]]; then
         AUDIT_PROJECT_ROOT="$(get_project_root)"
     fi
     AUDIT_SRC_DIR="$AUDIT_PROJECT_ROOT/src"
