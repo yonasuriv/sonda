@@ -11,21 +11,20 @@ clean:
 	@echo ""
 	@echo "Cleaning build artifacts..."
 	@echo ""
-	rm -rf packagng/debian/sonda
-	rm -rf packagng/debian/.debhelper
-	rm -f packagng/debian/files
-	rm -f packagng/debian/substvars
-	rm -f packagng/debian/*.debhelper.log
-	rm -f packagng/debian/*.substvars
-	rm -f packagng/debian/*.debhelper
-	rm -f packagng/debian/*.log
+	rm -rf debian/sonda
+	rm -rf debian/.debhelper
+	rm -f debian/files
+	rm -f debian/substvars
+	rm -f debian/*.debhelper.log
+	rm -f debian/*.substvars
+	rm -f debian/*.debhelper
+	rm -f debian/*.log
 	rm -f $(PACKAGE_NAME)
 	rm -f sonda_*.deb
-	rm -f packagng/../sonda_*.deb
-	rm -f packagng/../sonda_*.buildinfo
-	rm -f packagng/../sonda_*.changes
-	rm -f packagng/../sonda_*.dsc
-	rm -f packagng/../sonda_*.tar.*
+	rm -f sonda_*.buildinfo
+	rm -f sonda_*.changes
+	rm -f sonda_*.dsc
+	rm -f sonda_*.tar.*
 	@echo ""
 	@echo "Done."
 
@@ -55,7 +54,7 @@ build: clean
 	@echo ""
 	@echo "Building debian package..."
 	@echo ""
-	cd packagng && dpkg-buildpackage -us -uc -b
+	dpkg-buildpackage -us -uc -b
 	@if [ -f $(PACKAGE_NAME) ]; then \
 		echo "Package built in root directory: $(PACKAGE_NAME)"; \
 	fi
