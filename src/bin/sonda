@@ -19,10 +19,10 @@ fi
 # Priority: 1. Environment variable, 2. System-wide (/usr/share/sonda), 3. Source directory, 4. User local
 if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
     INSTALLDIR="$SONDA_INSTALL_DIR"
-elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/lib/style" ]]; then
+elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/check/lib/style" ]]; then
     # System-wide installation (Debian package)
     INSTALLDIR="/usr/share/sonda"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/style" ]]; then
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/lib/style" ]]; then
     # Running from source directory
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 else
@@ -30,15 +30,18 @@ else
     INSTALLDIR="$HOMEUSER/.local/share/sonda"
 fi
 
-# Initialize logging early
-if [[ -f "$INSTALLDIR/lib/logger" ]]; then
+# Initialize logging early - define fallback functions first
+log_error() { echo "[ERROR] $*" >&2; }
+log_warn() { echo "[WARN] $*" >&2; }
+log_info() { :; }
+log_debug() { :; }
+
+# Try to source actual logger if available
+if [[ -f "$INSTALLDIR/check/lib/logger" ]]; then
+    source "$INSTALLDIR/check/lib/logger" 2>/dev/null || true
+elif [[ -f "$INSTALLDIR/lib/logger" ]]; then
+    # Fallback for old structure
     source "$INSTALLDIR/lib/logger" 2>/dev/null || true
-else
-    # Fallback logging functions if logger not available
-    log_error() { echo "[ERROR] $*" >&2; }
-    log_warn() { :; }
-    log_info() { :; }
-    log_debug() { :; }
 fi
 
 # Check if installation directory exists
@@ -48,616 +51,65 @@ if [[ ! -d "$INSTALLDIR" ]]; then
     exit 1
 fi
 
-# Script initialization
+# Script initialization - export variables
 set -a
 
-# FOLDERS
-BIN="$INSTALLDIR/bin"
-DEV="$INSTALLDIR/dev"
-LIB="$INSTALLDIR/lib"
-MODULES="$INSTALLDIR/modules"
-ASSETS="$INSTALLDIR/assets"
+# CORE PATHS (exported for use by mode scripts)
+export INSTALLDIR
+export HOMEUSER
 
 # Version file is now in root directory
-VERSION_FILE="$INSTALLDIR/version"
+export VERSION_FILE="$INSTALLDIR/version"
 
-MODBASE="$MODULES/base"
-MODINFO="$MODULES/info"
-
-# FILES
-STYLE="$LIB/style"
-LOGIC="$LIB/logic"
-LOGO="$LIB/top"
-LOGGER="$LIB/logger"
-MAN="$LIB/man"
-
-BANNER="$MODBASE/banner"
-DEFAULT="$MODBASE/default"
-SYSINFO="$MODBASE/sysinfo"
-NETINFO="$MODBASE/netinfo"
-
-# Source required files with error handling
-if [[ -f "$STYLE" ]]; then
-    source "$STYLE" 2>/dev/null || log_warn "Failed to source style file"
-else
-    log_error "Style file not found: $STYLE"
-    exit 1
-fi
-
-if [[ -f "$LOGIC" ]]; then
-    source "$LOGIC" 2>/dev/null || log_warn "Failed to source logic file"
-else
-    log_error "Logic file not found: $LOGIC"
-    exit 1
-fi
-
-if [[ -f "$LOGO" ]]; then
-    source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
-fi
-
-# Version check functions are implemented directly in this file
-# (check_version_only and perform_update)
-
-# Source info modules
-for module in battery boot cpu devices disks gpu kernel memory network packages security; do
-    if [[ -f "$MODINFO/$module" ]]; then
-        source "$MODINFO/$module" 2>/dev/null || log_warn "Failed to source module: $module"
-    fi
-done
-
-# system_recommended function is now in lib/logic (already sourced above)
-# No need to source syscheck separately
-
-USAGE="$MAN"
-
-set +a
+# ASSETS (shared across modes)
+export ASSETS="$INSTALLDIR/assets"
 
 # Log initialization
 log_info "Sonda started with arguments: $*"
 
-# Variable to store the output modifier if --save is provided
-SOUT=""
-PRETTYP=""
-
 # Improved log file location (using XDG standard)
-LOGFILE_DIR="$HOMEUSER/.logs/sonda"
+export LOGFILE_DIR="$HOMEUSER/.logs/sonda"
 mkdir -p "$LOGFILE_DIR" 2>/dev/null || true
-LOGFILE="$LOGFILE_DIR/system_$(date +%Y%m%d_%H%M%S).log"
+export LOGFILE="$LOGFILE_DIR/system_$(date +%Y%m%d_%H%M%S).log"
 
-# Function to print in yellow for sudo commands skipped
-function print_sudo_skipped {
-    echo -e "${LB}${YELLOW}[!] ${1} skipped as it requires elevated privileges (sudo).${RT}"
-    log_warn "Sudo command skipped: $1"
-}
+set +a
 
-# Safe command execution (replaces eval)
-function safe_exec {
-    local command="$1"
-    
-    # Allow pipes (|) and basic shell features, but prevent dangerous constructs
-    # Block: command substitution with backticks, semicolons for command chaining, 
-    # background processes (&), and dangerous variable expansion patterns
-    # Note: Pipes (|) are explicitly allowed as they're needed for many commands
-    if [[ "$command" =~ \` ]] || \
-       [[ "$command" =~ \$\{.*\} ]] || \
-       [[ "$command" =~ \;.*\; ]] || \
-       [[ "$command" =~ \&\&.*\&\& ]] || \
-       [[ "$command" =~ \|\|.*\|\| ]]; then
-        log_error "Unsafe command detected: $command"
-        echo "Error: Unsafe command detected" >&2
-        return 1
-    fi
-    
-    # Execute command - pipes are allowed
-    eval "$command"
-}
+# Determine mode (default to check for now)
+MODE="${1:-check}"
 
-# Improved pprint function (replaces eval)
-function pprint {
-    local command="$1"
-    if [[ -n "$PRETTYP" ]]; then
-        # Run the command and strip ALL ANSI escape sequences completely
-        # Handle both complete sequences (\e[ or \033[ or \x1b[) and partial ones (33[)
-        if command -v perl &>/dev/null; then
-            # Perl can handle binary escape sequences better
-            # First remove complete escape sequences, then catch partial ones
-            safe_exec "$command" 2>&1 | \
-                perl -pe 's/\e\[[0-9;]*[a-zA-Z]//g' | \
-                perl -pe 's/\033\[[0-9;]*[a-zA-Z]//g' | \
-                perl -pe 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*m//g' | \
-                sed 's/\[[0-9;]*m//g' | \
-                sed 's/\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*//g'
-        else
-            # Use sed with comprehensive patterns to catch all ANSI escape sequences
-            # Process in order: complete sequences first, then partial ones
-            safe_exec "$command" 2>&1 | \
-                sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/\033\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/\e\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*m//g' | \
-                sed 's/\[[0-9;]*m//g' | \
-                sed 's/\[[0-9;]*[a-zA-Z]//g' | \
-                sed 's/33\[[0-9;]*//g' | \
-                sed 's/^33\[//g' | \
-                sed 's/33\[//g'
-        fi
-    else
-        safe_exec "$command"
-    fi
-}
-
-# Wrapper function to handle saving output if --save is present
-function LOGRUN {
-    local function_name="$1"
-    
-    if [[ -n "$SOUT" ]]; then
-        # Create log file with header (append if file exists, otherwise create)
-        if [[ ! -f "$LOGFILE" ]]; then
-            {
-                echo "=========================================="
-                echo "Sonda System Information Log"
-                echo "Generated: $(date '+%A, %B %d, %Y at %H:%M:%S %Z')"
-                echo "Command: $function_name"
-                echo "=========================================="
-                echo ""
-            } > "$LOGFILE"
-        else
-            {
-                echo ""
-                echo "--- Additional command: $function_name ---"
-                echo ""
-            } >> "$LOGFILE"
-        fi
-        
-        # Run function and save output
-        if type "$function_name" &>/dev/null; then
-            "$function_name" | tee /dev/tty | sed 's/\x1b\[[0-9;]*m//g' >> "$LOGFILE"
-        else
-            log_error "Function not found: $function_name"
-            echo "Error: Function '$function_name' not found" >&2
-        fi
-    else
-        if type "$function_name" &>/dev/null; then
-            "$function_name"
-        else
-            log_error "Function not found: $function_name"
-            echo "Error: Function '$function_name' not found" >&2
-            return 1
-        fi
-    fi
-}
-
-# Enhanced version checking function
-check_version_only() {
-    local local_version
-    local remote_version
-    
-    log_info "Checking for updates (check-only mode)"
-    
-    # Get local version
-    if [[ -f "$VERSION_FILE" ]]; then
-        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-    else
-        echo -e "${E} Local version file not found.${RT}" >&2
-        log_error "Local version file not found: $VERSION_FILE"
-        return 1
-    fi
-    
-    # Get remote version
-    if ! command -v curl &> /dev/null; then
-        echo -e "${E} curl not found. Cannot check remote version.${RT}" >&2
-        log_error "curl not found"
-        return 1
-    fi
-    
-    remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
-        2>/dev/null | tr -d '\n\r ' || echo "")
-    
-    if [[ -z "$remote_version" ]]; then
-        echo -e "${E} Failed to retrieve remote version. Check your internet connection.${RT}" >&2
-        log_error "Failed to retrieve remote version"
-        return 1
-    fi
-    
-    # Compare versions
-    if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "${S} ${BLUE}Sonda version${RT} $local_version ${GREEN}(running the latest version)${RT}"
-        log_info "Version check: up to date ($local_version)"
-        return 0
-    else
-        echo -e "${W} There is a new version disponible: ${GREEN2}$remote_version${RT} (upgradable from ${YELLOW2}$local_version${RT})\n"
-        echo -e "    Run ${CYAN}sonda --upgrade${RT} to get the latest version.${RT}"
-        log_info "Version check: update available ($local_version -> $remote_version)"
-        return 2
-    fi
-}
-
-# Enhanced update function
-perform_update() {
-    local local_version
-    local remote_version
-    local update_status=0
-    
-    log_info "Starting update process"
-    
-    # Get local version
-    if [[ -f "$VERSION_FILE" ]]; then
-        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-    else
-        echo -e "${E} Local version file not found.${RT}"
-        log_error "Local version file not found"
-        return 1
-    fi
-    
-    echo -e "${LB}  +  Checking for updates...${RT}"
-    echo -e ""
-    echo -e "  ${DIM}Current version: $local_version${RT}"
-    
-    # Get remote version
-    if ! command -v curl &> /dev/null; then
-        echo -e "  |  ${RED}✗${RT} curl not found"
-        echo -e "${E} curl not found. Cannot check for updates.${RT}"
-        log_error "curl not found"
-        return 1
-    fi
-    
-    remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
-        2>/dev/null | tr -d '\n\r ' || echo "")
-    
-    if [[ -z "$remote_version" ]]; then
-        echo -e "${E} Failed to retrieve remote version.${RT}"
-        log_error "Failed to retrieve remote version"
-        return 1
-    fi
-    
-    echo -e "     ${DIM}Remote version: $remote_version${RT}"
-    echo -e ""
-    
-    # Compare versions
-    if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "${LB}${S} ${GREEN}Already up to date. You are running the latest version ($local_version)${RT}${LB}"
-        log_info "Update check: already up to date"
-        return 0
-    fi
-    
-    # Update available
-    echo -e "  |  ${YELLOW}⚠${RT} Update available: $local_version → $remote_version"
-    echo -e "  | "
-    echo -e "  +  Updating Sonda...${RT}"
-    
-    # Check if it's a git repository
-    if [[ ! -d "$INSTALLDIR/.git" ]]; then
-        echo -e "  |  ${RED}✗${RT} Installation directory is not a git repository"
-        echo -e "  |  ${DIM}Please reinstall using: sudo ./SETUP.sh --install${RT}"
-        echo -e "${E} Cannot update: not a git repository${RT}"
-        log_error "Update failed: not a git repository"
-        return 1
-    fi
-    
-    # Check for git command
-    if ! command -v git &> /dev/null; then
-        echo -e "  |  ${RED}✗${RT} git not found"
-        echo -e "${E} git not found. Cannot update.${RT}"
-        log_error "git not found"
-        return 1
-    fi
-    
-    echo -e "  |  ${DIM}Using git to update...${RT}"
-    
-    # Configure git safe directory
-    git config --global --add safe.directory "$INSTALLDIR" 2>/dev/null || true
-    
-    # Change to installation directory
-    cd "$INSTALLDIR" || {
-        echo -e "${E} Cannot access installation directory${RT}"
-        log_error "Cannot access installation directory: $INSTALLDIR"
-        return 1
-    }
-    
-    # Fetch and pull updates
-    if git fetch origin main &>/dev/null; then
-        if git pull origin main &>/dev/null; then
-            # Verify update
-            local new_version
-            if [[ -f "$VERSION_FILE" ]]; then
-                new_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-            else
-                new_version="unknown"
-            fi
-            
-            if [[ "$new_version" != "$local_version" ]]; then
-                echo -e "  |  ${GREEN}✓${RT} Updated successfully: $local_version → $new_version"
-                echo -e "${LB}${S} ${GREEN}Update complete!${RT}${LB}"
-                log_info "Update successful: $local_version -> $new_version"
-                return 0
-            else
-                echo -e "  |  ${YELLOW}⚠${RT} Update completed but version unchanged"
-                echo -e "${LB}${S} ${GREEN}Update complete${RT}${LB}"
-                log_info "Update completed (version unchanged)"
-                return 0
-            fi
-        else
-            echo -e "  |  ${RED}✗${RT} Git pull failed"
-            echo -e "${E} Update failed. Please try again later.${RT}"
-            log_error "Git pull failed"
-            return 1
-        fi
-    else
-        echo -e "  |  ${RED}✗${RT} Git fetch failed"
-        echo -e "${E} Update failed. Check your internet connection.${RT}"
-        log_error "Git fetch failed"
-        return 1
-    fi
-}
-
-# Remember to update any changes below accordingly in the help manual under lib/man
-
-# Parse flags first (they can appear anywhere and be combined)
-VLEVEL=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -s|--save)
-            SOUT="enabled"
-            log_info "Save mode enabled"
-            shift
-            ;;
-        -nc|--no-color)
-            PRETTYP="true"
-            shift
-            ;;
-        -v|-vv|-vvv)
-            # Count v's for verbosity
-            VLEVEL="$1"
-            log_info "Setting verbosity level: $VLEVEL"
-            shift
-            ;;
-        *)
-            # Not a flag, break and process as command/target
-            break
-            ;;
-    esac
-done
-
-# Check if no arguments are provided (default to sys command)
-if [[ $# -eq 0 ]]; then
-    log_info "No arguments provided, showing default menu"
-    if type logo_sonda_script &>/dev/null; then
-        logo_sonda_script
-    fi
-    if [[ -f "$DEFAULT" ]]; then
-        source "$DEFAULT"
-    fi
-    exit 0
-fi
-
-# Argument handling - New format matching lib/man
-while [[ $# -gt 0 ]]; do
-    key="$1"
-    case $key in
-        # Commands
-        sys)
-            log_info "Showing system information (sys)"
-            LOGRUN "system_info"
-            if [[ -f "$SYSINFO" ]]; then
-                source "$SYSINFO"
-            fi
-            exit 0
-            ;;
-        
-        net)
-            log_info "Showing network information (net)"
-            if [[ -f "$NETINFO" ]]; then
-                if command -v python3 &>/dev/null; then
-                    python3 "$NETINFO"
-                elif command -v python &>/dev/null; then
-                    python "$NETINFO"
-                else
-                    echo -e "${E} Python not found. Cannot show network information.${RT}" >&2
-                    log_error "Python not found for network info"
-                    exit 1
-                fi
-            else
-                echo -e "${E} Network info module not found.${RT}" >&2
-                log_error "Network info module not found: $NETINFO"
-                exit 1
-            fi
-            exit 0
-            ;;
-        
-        # Targets (require -T)
-        -T)
-            if [[ $# -lt 2 ]]; then
-                echo -e "${E} -T requires a target. Use ${CYAN}sonda --help${RT} to see available targets.${RT}" >&2
-                exit 1
-            fi
-            TARGET="$2"
-            shift 2
-            
-            # Process target
-            case "$TARGET" in
-                pkgs|packages)
-                    log_info "Showing package information"
-                    LOGRUN "installed_packages"
-                    ;;
-                cpu)
-                    log_info "Showing CPU information"
-                    LOGRUN "cpu_info"
-                    ;;
-                gpu)
-                    log_info "Showing GPU information"
-                    LOGRUN "graphics_info"
-                    ;;
-                disks)
-                    log_info "Showing disk information"
-                    LOGRUN "disk_storage_info"
-                    ;;
-                memory|mem)
-                    log_info "Showing memory information"
-                    LOGRUN "memory_info"
-                    LOGRUN "detailed_memory_info"
-                    ;;
-                kernel|k)
-                    log_info "Showing kernel information"
-                    LOGRUN "kernel_boot_params"
-                    LOGRUN "kernel_modules"
-                    ;;
-                devices)
-                    log_info "Showing device information"
-                    LOGRUN "pci_devices"
-                    LOGRUN "usb_devices"
-                    ;;
-                network|networks)
-                    log_info "Showing network information"
-                    LOGRUN "network_info"
-                    LOGRUN "network_connections"
-                    ;;
-                battery)
-                    log_info "Showing battery information"
-                    LOGRUN "battery_info"
-                    ;;
-                boot)
-                    log_info "Showing boot information"
-                    LOGRUN "boot_all"
-                    ;;
-                security)
-                    log_info "Showing security information"
-                    LOGRUN "security_all"
-                    ;;
-                all)
-                    log_info "Showing all information"
-                    LOGRUN "system_info"
-                    LOGRUN "complete_system_info"
-                    LOGRUN "kernel_boot_params" 
-                    LOGRUN "kernel_modules" 
-                    LOGRUN "battery_info" 
-                    LOGRUN "cpu_info" 
-                    LOGRUN "graphics_info" 
-                    LOGRUN "memory_info" 
-                    LOGRUN "detailed_memory_info" 
-                    LOGRUN "disk_storage_info" 
-                    LOGRUN "pci_devices" 
-                    LOGRUN "usb_devices" 
-                    LOGRUN "network_info" 
-                    LOGRUN "network_connections" 
-                    LOGRUN "installed_packages"
-                    LOGRUN "boot_all"
-                    LOGRUN "security_all"
-                    ;;
-                *)
-                    echo -e "${E} Unknown target: $TARGET${RT}" >&2
-                    echo -e "${W} Use ${CYAN}sonda --help${RT} to see available targets.${RT}" >&2
-                    exit 1
-                    ;;
-            esac
-            continue
-            ;;
-        
-        # Meta commands
-        --update)
-            log_info "Checking for updates (--update)"
-            echo ""
-            check_version_only
-            exit_code=$?
-            echo ""
-            exit $exit_code
-            ;;
-        
-        --upgrade)
-            log_info "Updating Sonda (--upgrade)"
-            perform_update
+# Route to appropriate mode script
+# Use source instead of exec to preserve functions and variables
+case "$MODE" in
+    check|"")
+        # Default mode: check
+        if [[ -f "$INSTALLDIR/check/init.sh" ]]; then
+            source "$INSTALLDIR/check/init.sh" "$@"
             exit $?
-            ;;
-        
-        --version)
-            log_info "Checking version (--version)"
-            check_version_only
-            exit 0
-            ;;
-        
-        --recommends)
-            log_info "Showing system recommendations (--recommends)"
-            # system_recommended is in lib/logic (already sourced)
-            if ! type system_recommended &>/dev/null; then
-                echo -e "${E} system_recommended function not found in lib/logic.${RT}" >&2
-                log_error "system_recommended function not found"
-                exit 1
-            fi
-            
-            if ! command -v inxi &>/dev/null; then
-                echo -e "${E} inxi not found. Please install it: ${CYAN}sudo apt install inxi${RT}" >&2
-                log_error "inxi command not found"
-                exit 1
-            fi
-            
-            if type system_recommended &>/dev/null; then
-                system_recommended 2>&1 || {
-                    local exit_code=$?
-                    if [[ $exit_code -ne 0 ]]; then
-                        echo -e "${W} System recommendations check completed with warnings.${RT}" >&2
-                        log_warn "system_recommended exited with code $exit_code"
-                    fi
-                }
-            else
-                echo -e "${E} system_recommended function not available.${RT}" >&2
-                log_error "system_recommended function not found after sourcing"
-                exit 1
-            fi
-            exit 0
-            ;;
-        
-        --banner)
-            log_info "Showing banner (--banner)"
-            if type logo_sonda_script &>/dev/null; then
-                logo_sonda_script
-            elif type logo_sonda_sysnet &>/dev/null; then
-                logo_sonda_sysnet
-            else
-                echo -e "${W} Banner function not available.${RT}" >&2
-            fi
-            exit 0
-            ;;
-        
-        -h|--help)
-            log_info "Showing help"
-            if type logo_sonda_sysnet &>/dev/null; then
-                logo_sonda_sysnet
-            fi
-            if [[ -f "$USAGE" ]]; then
-                PRINT_USAGE=$(cat "$USAGE")
-                echo -e "$PRINT_USAGE"
-            else
-                echo "Usage information not available." >&2
-                log_error "Usage file not found: $USAGE"
-            fi
-            exit 0
-            ;;
-        
-        *)
-            echo -e "${E} ${RED}Unknown argument: $key${RT}" >&2
-            echo -e "${W} Use ${CYAN}sonda --help${RT} to see available options.${RT}" >&2
-            log_warn "Unknown argument: $key"
+        else
+            echo "Error: Check mode script not found: $INSTALLDIR/check/init.sh" >&2
+            log_error "Check mode script not found"
             exit 1
-            ;;
-    esac
-    shift
-done
-
-# Output result based on whether --save was used
-if [[ -n "$SOUT" ]]; then
-    if [[ -f "$LOGFILE" ]]; then
-        echo -e "${LB}${GREEN2}✔ System information gathered successfully.${RT}"
-        echo -e "${DIM}   Log file saved to: ${CYAN}$LOGFILE${RT}${RT}"
-        log_info "Log file created: $LOGFILE"
-    else
-        echo -e "${LB}${YELLOW}[!] Log file may not have been created.${RT}"
-        log_warn "Log file not found after save operation: $LOGFILE"
-    fi
-fi
-
-log_info "Sonda execution completed"
+        fi
+        ;;
+    audit)
+        # Audit mode (future)
+        if [[ -f "$INSTALLDIR/audit/init.sh" ]]; then
+            source "$INSTALLDIR/audit/init.sh" "$@"
+            exit $?
+        else
+            echo "Error: Audit mode not yet implemented" >&2
+            log_error "Audit mode not implemented"
+            exit 1
+        fi
+        ;;
+    *)
+        # Unknown mode, try check mode with all arguments
+        if [[ -f "$INSTALLDIR/check/init.sh" ]]; then
+            source "$INSTALLDIR/check/init.sh" "$@"
+            exit $?
+        else
+            echo "Error: Unknown mode and check mode not available" >&2
+            exit 1
+        fi
+        ;;
+esac
