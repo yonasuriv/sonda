@@ -3,7 +3,7 @@
 # export DH_VERBOSE = 1
 
 # Version and package info
-VERSION := $(shell cat ../src/version 2>/dev/null || echo "1.8.5")
+VERSION := $(shell cat ../VERSION 2>/dev/null || echo "1.8.5")
 DEB_VERSION := $(VERSION)-1
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
 DIST_DIR := ../dist/sonda_$(DEB_VERSION)
@@ -105,7 +105,7 @@ override_dh_auto_install:
 	mkdir -p debian/sonda/usr/share/pixmaps
 	cp ../assets/icons/sonda.png debian/sonda/usr/share/pixmaps/
 	# Install version file to root of installation
-	cp ../src/version debian/sonda/usr/share/sonda/
+	cp ../VERSION debian/sonda/usr/share/sonda/version
 
 # No Python package to process - all Python deps are in Depends
 

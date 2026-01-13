@@ -170,9 +170,9 @@ install() {
   local deb_file=""
   local version
   
-  # Try to get version from src/version or from dist directory
-  if [[ -f src/version ]]; then
-    version=$(cat src/version)
+  # Try to get version from VERSION or from dist directory
+  if [[ -f VERSION ]]; then
+    version=$(cat VERSION)
   else
     version="unknown"
   fi

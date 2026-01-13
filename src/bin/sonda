@@ -255,7 +255,7 @@ check_version_only() {
     fi
     
     remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/version" \
+        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
         2>/dev/null | tr -d '\n\r ' || echo "")
     
     if [[ -z "$remote_version" ]]; then
@@ -307,7 +307,7 @@ perform_update() {
     fi
     
     remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/version" \
+        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
         2>/dev/null | tr -d '\n\r ' || echo "")
     
     if [[ -z "$remote_version" ]]; then

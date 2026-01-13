@@ -1,4 +1,0 @@
-# Underd development
-
-Accepted:
-- debian

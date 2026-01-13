@@ -1,9 +1,0 @@
-sonda (1.8.2-1) unstable; urgency=medium
-
-  * Initial Debian package release
-  * System-wide installation support
-  * Proper .deb package with clean install/uninstall
-  * Desktop file and icon integration
-  * All dependencies properly declared
-
- -- yonasuriv <yonasuriv@users.noreply.github.com>  Mon, 12 Jan 2026 16:00:00 +0000

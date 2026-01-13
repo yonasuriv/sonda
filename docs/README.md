@@ -43,10 +43,10 @@ This directory contains all documentation for the Sonda system information tool.
 
 Current version: **1.8.7**
 
-Version file location: `src/version`
+Version file location: `VERSION` (root directory)
 
 Version checking: The version is checked against the remote repository at:
-`https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/src/version`
+`https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION`
 
 ## Project Structure
 
@@ -55,8 +55,8 @@ sonda/
 ├── src/              # Source code
 │   ├── bin/          # Main executable
 │   ├── lib/          # Core libraries
-│   ├── modules/      # Information modules
-│   └── version       # Version file
+│   └── modules/      # Information modules
+├── VERSION           # Version file (root)
 ├── assets/           # Art, icons, desktop files
 ├── packagng/         # Packaging files
 │   └── debian/       # Debian packaging files
