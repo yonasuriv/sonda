@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Build dependencies only (minimal set needed to build the .deb package)
-# Runtime dependencies are defined in debian/control
+# Runtime dependencies are defined in packagng/debian/control
 DEPS=(
   build-essential
   "debhelper-compat (= 13)"

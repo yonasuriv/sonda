@@ -1,0 +1,13 @@
+# 16. List of Installed Packages
+function installed_packages {
+    # dpkg -l lists all installed packages.
+    echo -e "${LB}${CYAN}[#] Installed Packages ${BLUE}(dpkg -l)${RT}${LB}"
+    totalpkgs=$(dpkg -l | cat | wc -l)
+    if [[ "$key" == "-all" ]]; then
+        echo -e "There are $totalpkgs installed packages on the system.${LB}"
+        echo -e "${YELLOW}[!] To see the complete list, use -ald or -pkgs"
+    else 
+        echo -e "There are $totalpkgs installed packages on the system.${LB}"
+        pprint "dpkg -l | cat"
+    fi
+}

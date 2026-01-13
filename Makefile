@@ -2,7 +2,7 @@
 
 .PHONY: clean build install package
 
-VERSION := $(shell cat version 2>/dev/null || echo "1.8.5")
+VERSION := $(shell cat src/version 2>/dev/null || echo "1.8.5")
 DEB_VERSION := $(VERSION)-1
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
 
@@ -10,16 +10,17 @@ clean:
 	@echo ""
 	@echo "Cleaning build artifacts..."
 	@echo ""
-	rm -rf debian/sonda
-	rm -rf debian/.debhelper
-	rm -f debian/files
-	rm -f debian/substvars
-	rm -f debian/*.debhelper.log
-	rm -f debian/*.substvars
-	rm -f debian/*.debhelper
-	rm -f debian/*.log
+	rm -rf packagng/debian/sonda
+	rm -rf packagng/debian/.debhelper
+	rm -f packagng/debian/files
+	rm -f packagng/debian/substvars
+	rm -f packagng/debian/*.debhelper.log
+	rm -f packagng/debian/*.substvars
+	rm -f packagng/debian/*.debhelper
+	rm -f packagng/debian/*.log
 	rm -f $(PACKAGE_NAME)
 	rm -f sonda_*.deb
+	rm -f packagng/../sonda_*.deb
 	@echo ""
 	@echo "Done."
 
@@ -27,18 +28,18 @@ build: clean
 	@echo ""
 	@echo "Building debian package..."
 	@echo ""
-	dpkg-buildpackage -us -uc -b
+	cd packagng && dpkg-buildpackage -us -uc -b
 	@echo ""
 	@echo "Package built successfully."
 
 package: build
 	@echo "Package: $(PACKAGE_NAME)"
-	@ls -lh ../$(PACKAGE_NAME) 2>/dev/null || ls -lh $(PACKAGE_NAME) 2>/dev/null || echo "Package location may vary"
+	@ls -lh packagng/../$(PACKAGE_NAME) 2>/dev/null || ls -lh packagng/$(PACKAGE_NAME) 2>/dev/null || ls -lh $(PACKAGE_NAME) 2>/dev/null || echo "Package location may vary"
 
 install: package
 	@echo ""
 	@echo "Installing package..."
-	sudo dpkg -i ../$(PACKAGE_NAME) 2>/dev/null || sudo dpkg -i $(PACKAGE_NAME) 2>/dev/null || echo "Please install manually: sudo dpkg -i $(PACKAGE_NAME)"
+	sudo dpkg -i packagng/../$(PACKAGE_NAME) 2>/dev/null || sudo dpkg -i packagng/$(PACKAGE_NAME) 2>/dev/null || sudo dpkg -i $(PACKAGE_NAME) 2>/dev/null || echo "Please install manually: sudo dpkg -i $(PACKAGE_NAME)"
 	@echo "Installation complete!"
 	@echo ""
 

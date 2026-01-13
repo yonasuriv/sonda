@@ -1,0 +1,21 @@
+# 5. Memory Information
+function memory_info {
+    # free -h displays free and used memory in a human-readable format.
+    echo -e "${LB}${CYAN}[#] Memory Information ${BLUE}(free -h)${RT}${LB}"
+    pprint "free -h"
+}
+
+# 6. Detailed Memory Hardware Information (requires sudo)
+function detailed_memory_info {
+    # dmidecode provides detailed information about the memory modules.
+    if [[ "$key" == "-all" ]]; then
+        echo -e "${LB}${YELLOW}[!] Detailed Memory Hardware Information skipped. Only available with -ald or -mem"
+    else
+        if sudo -n true 2>/dev/null; then
+            echo -e "${LB}${CYAN}[#] Detailed Memory Hardware Information ${BLUE}(dmidecode -t memory)${RT}${LB}"
+            pprint "sudo dmidecode -t memory"
+        else
+            print_sudo_skipped "Detailed Memory Hardware Information (dmidecode -t memory)"
+        fi
+    fi
+}

@@ -1,0 +1,8 @@
+#!/bin/bash
+# prerm script for sonda
+
+set -e
+
+
+
+exit 0

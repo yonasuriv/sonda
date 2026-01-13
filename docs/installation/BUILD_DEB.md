@@ -28,7 +28,7 @@ make clean
 
 ```bash
 # Build the package
-dpkg-buildpackage -us -uc -b
+cd packagng && dpkg-buildpackage -us -uc -b
 
 # The .deb file will be created in the parent directory
 ```

@@ -39,9 +39,8 @@ sudo apt remove sonda
 ### Files Created
 
 ```
-debian/
+packagng/debian/
 ├── changelog          # Version history
-├── compat             # Debhelper compatibility
 ├── control            # Package metadata and dependencies
 ├── copyright          # License information
 ├── postinst          # Post-installation script
@@ -134,7 +133,7 @@ make clean        # Clean build artifacts
 ### Method 2: Using dpkg-buildpackage
 
 ```bash
-dpkg-buildpackage -us -uc -b
+cd packagng && dpkg-buildpackage -us -uc -b
 ```
 
 ### Method 3: Using debuild (for signed packages)

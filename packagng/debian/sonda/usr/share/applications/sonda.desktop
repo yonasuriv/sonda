@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Sonda
+Comment=System & Network Sensor, on steroids.
+Exec=sonda
+Icon=sonda
+Terminal=true
+Categories=System;Monitor;Utility;
+Keywords=system;network;monitor;information;hardware;
+StartupNotify=false
+Path=/usr/bin

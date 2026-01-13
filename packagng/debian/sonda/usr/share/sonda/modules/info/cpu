@@ -1,0 +1,6 @@
+# 4. CPU Information
+function cpu_info {
+    # lscpu displays information about the CPU architecture, cores, threads, cache, and more.
+    echo -e "${LB}${CYAN}[#] CPU Information ${BLUE}(lscpu)${RT}${LB}"
+    pprint "lscpu"
+}

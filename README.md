@@ -108,7 +108,7 @@ This will provide a comprehensive, real-time overview of your system and network
 
 ## Compatibility
 
-Tested and fully functional on Kali linux, but should be fully compatible with all debian-based GNU/Linux distributions. Will add a requirements.txt or deps handler later.
+Tested and fully functional on Kali linux, but should be fully compatible with all debian-based GNU/Linux distributions. All dependencies are automatically handled by the Debian package (see `packagng/debian/control`).
 
 ## Support
 To contribute or get support, simply fork the repository and submit your issues or pull requests. 

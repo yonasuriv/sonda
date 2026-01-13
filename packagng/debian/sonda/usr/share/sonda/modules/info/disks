@@ -1,0 +1,19 @@
+# 7. Disk and Storage Information
+function disk_storage_info {
+    # df -h shows disk usage and mounted filesystems in a human-readable format.
+    echo -e "${LB}${CYAN}[#] Disk and Storage Information ${BLUE}(df -h)${RT}${LB}"
+    df -h
+
+    # lsblk shows the block devices and their mount points.
+    echo -e "${LB}${CYAN}[#] Block Devices ${BLUE}(lsblk)${RT}${LB}"
+    pprint "lsblk"
+
+    # fdisk -l shows detailed partition and disk information (requires sudo)
+
+    if sudo -n true 2>/dev/null; then
+        echo -e "${LB}${CYAN}[#] Partition and Disk Information ${BLUE}(fdisk -l)${RT}${LB}"
+        pprint "sudo fdisk -l"
+    else
+        print_sudo_skipped "Partition and Disk Information (fdisk -l)"
+    fi
+}

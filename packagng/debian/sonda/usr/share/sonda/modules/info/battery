@@ -1,0 +1,18 @@
+# 15. Battery Information (for laptops)
+function battery_info {
+    # upower -e provides battery status and details.
+    devices=$(upower -e)
+    # Check if any devices were found
+    if [ -z "$devices" ]; then
+        echo -e "${YELLOW}[!] No power devices found. Skipping Battery Information ${BLUE}(upower -e)${RT}${LB}"
+    else
+        echo -e "${LB}${CYAN}[#] Battery Information ${BLUE}(upower -e)${RT}${LB}"
+
+        # Loop through each device and display detailed info using upower -i
+        for device in $devices; do
+            echo -e "Details for device: $device${LB}"
+            pprint "upower -i $device"
+            #echo -e "${LB}--------------------------------------${LB}"
+        done
+    fi
+}

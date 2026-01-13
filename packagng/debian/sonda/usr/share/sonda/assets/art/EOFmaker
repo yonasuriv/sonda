@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Function to convert ASCII art to heredoc format
+convert_to_heredoc() {
+    local input_file="$1"
+    local output_file="${input_file%.txt}.sh"  # Convert .txt to .sh or keep the same name if no .txt extension
+
+    # Check if the output file already exists and contains 'EOF'
+    if [ -f "$output_file" ] && grep -q "EOF" "$output_file"; then
+        echo "Skipping $input_file: $output_file already contains heredoc."
+        return
+    fi
+
+    echo "Processing $input_file..."
+    
+    # Create the output file with heredoc
+    echo "cat << 'EOF'" > "$output_file"     # Start heredoc
+    cat "$input_file" >> "$output_file"      # Append the ASCII art
+    echo "EOF" >> "$output_file"             # Close heredoc
+    
+    echo "Converted $input_file to $output_file"
+}
+
+# Loop through all files in the current directory
+for file in *; do
+    if [ -f "$file" ]; then
+        convert_to_heredoc "$file"
+    fi
+done
+
+echo "Conversion complete! All files in the current directory have been processed."

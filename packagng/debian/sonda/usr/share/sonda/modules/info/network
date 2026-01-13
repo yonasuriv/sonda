@@ -1,0 +1,17 @@
+# 10. Network Information
+function network_info {
+    # ip addr show displays IP address information for all network interfaces.
+    echo -e "${LB}${CYAN}[#] Network Interfaces ${BLUE}(ip addr show)${RT}${LB}"
+    pprint "ip addr show"
+
+    # ip route show displays the current routing table.
+    echo -e "${LB}${CYAN}[#] Routing Table ${BLUE}(ip route show)${RT}${LB}"
+    pprint "ip route show"
+}
+
+# 13. Running Network Connections
+function network_connections {
+    # netstat -tuln shows active TCP and UDP network connections.
+    echo -e "${LB}${CYAN}[#] Active Network Connections ${BLUE}(netstat -tuln)${RT}${LB}"
+    pprint "netstat -tuln"
+}

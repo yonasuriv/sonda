@@ -376,24 +376,23 @@ sudo ./SETUP.sh --install
 git clone https://github.com/yonasuriv/sonda.git
 cd sonda
 
-# Install Python dependencies
-pip3 install -r requirements.txt
-
 # Install system dependencies (Debian/Ubuntu)
+# Note: Python dependencies are handled automatically by the Debian package
+# For manual installation, install the packages listed in packagng/debian/control
 sudo apt update
-sudo apt install -y lolcat inxi pciutils
+sudo apt install -y lolcat inxi pciutils python3-psutil python3-requests python3-colorama
 
 # Copy files to installation directory
 INSTALL_DIR="$HOME/.local/share/sonda"
 mkdir -p "$INSTALL_DIR"
-cp -r . "$INSTALL_DIR"
+cp -r src/* assets "$INSTALL_DIR"
 
 # Create symlink to binary
-sudo ln -sf "$INSTALL_DIR/bin/init" /usr/bin/sonda
+sudo ln -sf "$INSTALL_DIR/bin/sonda" /usr/bin/sonda
 sudo chmod +x /usr/bin/sonda
 
 # Install desktop file (optional)
-sudo cp "$INSTALL_DIR/static/shortcuts/sonda.desktop" /usr/share/applications/
+sudo cp "$INSTALL_DIR/assets/shortcuts/sonda.desktop" /usr/share/applications/
 
 # Set proper permissions
 sudo chown -R "$USER:$USER" "$INSTALL_DIR"

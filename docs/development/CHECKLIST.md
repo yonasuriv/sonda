@@ -220,7 +220,7 @@ This checklist tracks all issues identified in `DEVELOPMENT.md` and their resolu
   - [x] Use proper indentation (  +  and  |  )
 
 - [x] **Add Python dependencies installation**
-  - [x] Install from requirements.txt
+  - [x] Install dependencies (handled by Debian package)
   - [x] Check for pip/pip3
   - [x] Handle installation errors gracefully
 
