@@ -166,29 +166,16 @@ build() {
 }
 
 install() {
-  # Find the .deb file - check dist/ directory first, then root
+  # Find the .deb file in dist/ directory only
   local deb_file=""
-  local version
   
-  # Try to get version from VERSION or from dist directory
-  if [[ -f VERSION ]]; then
-    version=$(cat VERSION)
-  else
-    version="unknown"
-  fi
-  
-  # Check dist directory first (preferred location)
+  # Check dist directory for packages
   if [[ -d "dist" ]]; then
     deb_file=$(find dist -name "sonda_*.deb" -type f 2>/dev/null | sort -V | tail -n 1 || true)
   fi
   
-  # Fallback to root directory
   if [[ -z "${deb_file:-}" ]]; then
-    deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f 2>/dev/null | head -n 1 || true)
-  fi
-  
-  if [[ -z "${deb_file:-}" ]]; then
-    die "No sonda_*.deb file found. Run 'build' first."
+    die "No sonda_*.deb file found in dist/ directory. Run 'build' first."
   fi
   
   echo "Installing $deb_file..."

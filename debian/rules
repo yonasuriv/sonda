@@ -3,17 +3,20 @@
 # export DH_VERBOSE = 1
 
 # Version and package info
-VERSION := $(shell cat ../VERSION 2>/dev/null || echo "1.8.5")
+# When called from root: VERSION is at root
+# When called from debian/: VERSION is at ../VERSION
+VERSION := $(shell if [ -f VERSION ]; then cat VERSION; elif [ -f ../VERSION ]; then cat ../VERSION; else echo "1.8.5"; fi)
 DEB_VERSION := $(VERSION)-1
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
-DIST_DIR := ../dist/sonda_$(DEB_VERSION)
+# DIST_DIR is relative to project root
+DIST_DIR := dist/sonda_$(DEB_VERSION)
 
 # Standard debhelper targets
 %:
 	dh $@
 
 # Custom targets for building and managing packages
-.PHONY: clean build install package collect help
+.PHONY: clean build install package collect help uninstall
 
 clean:
 	@echo ""
@@ -27,12 +30,12 @@ clean:
 	rm -f debian/*.substvars
 	rm -f debian/*.debhelper
 	rm -f debian/*.log
-	rm -f ../$(PACKAGE_NAME)
-	rm -f ../sonda_*.deb
-	rm -f ../sonda_*.buildinfo
-	rm -f ../sonda_*.changes
-	rm -f ../sonda_*.dsc
-	rm -f ../sonda_*.tar.*
+	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then rm -f $(PACKAGE_NAME); fi'
+	@bash -c 'if [ -f sonda_*.deb ]; then rm -f sonda_*.deb; fi'
+	@bash -c 'if [ -f sonda_*.buildinfo ]; then rm -f sonda_*.buildinfo; fi'
+	@bash -c 'if [ -f sonda_*.changes ]; then rm -f sonda_*.changes; fi'
+	@bash -c 'if [ -f sonda_*.dsc ]; then rm -f sonda_*.dsc; fi'
+	@bash -c 'if [ -f sonda_*.tar.* ]; then rm -f sonda_*.tar.*; fi'
 	@echo ""
 	@echo "Done."
 
@@ -40,11 +43,11 @@ collect:
 	@echo ""
 	@echo "Collecting build artifacts..."
 	@mkdir -p $(DIST_DIR)
-	@bash -c 'if [ -f ../$(PACKAGE_NAME) ]; then cp -a ../$(PACKAGE_NAME) $(DIST_DIR)/; fi'
-	@bash -c 'if [ -f ../sonda_$(DEB_VERSION)_*.buildinfo ]; then cp -a ../sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if [ -f ../sonda_$(DEB_VERSION)_*.changes ]; then cp -a ../sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if [ -f ../sonda_$(DEB_VERSION).dsc ]; then cp -a ../sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if [ -f ../sonda_$(DEB_VERSION).tar.* ]; then cp -a ../sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then cp -a $(PACKAGE_NAME) $(DIST_DIR)/; fi'
+	@bash -c 'if ls sonda_$(DEB_VERSION)_*.buildinfo 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if ls sonda_$(DEB_VERSION)_*.changes 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if [ -f sonda_$(DEB_VERSION).dsc ]; then cp -a sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if ls sonda_$(DEB_VERSION).tar.* 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; fi'
 	@echo "Collected artifacts in $(DIST_DIR)"
 	@echo ""
 
@@ -52,20 +55,20 @@ build: clean
 	@echo ""
 	@echo "Building debian package..."
 	@echo ""
-	cd .. && dpkg-buildpackage -us -uc -b
-	@bash -c 'if [ -f ../$(PACKAGE_NAME) ]; then echo "Package built: $(PACKAGE_NAME)"; fi'
+	dpkg-buildpackage -us -uc -b
+	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then echo "Package built: $(PACKAGE_NAME)"; fi'
 	@echo ""
 	@echo "Package built successfully."
-	@cd .. && $(MAKE) -f debian/rules collect
+	@$(MAKE) -f debian/rules collect
 
 package: build
 	@echo "Package: $(PACKAGE_NAME)"
-	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then ls -lh ../$(PACKAGE_NAME); else echo "Package not found"; fi'
+	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); else echo "Package not found"; fi'
 
 install: package
 	@echo ""
 	@echo "Installing package..."
-	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then sudo dpkg -i ../$(PACKAGE_NAME); else echo "Error: Package $(PACKAGE_NAME) not found"; exit 1; fi'
+	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); else echo "Error: Package $(PACKAGE_NAME) not found in $(DIST_DIR)"; exit 1; fi'
 	@echo "Installation complete!"
 	@echo ""
 
@@ -81,31 +84,31 @@ help:
 	@echo "  make -f debian/rules clean      - Clean build artifacts"
 	@echo "  make -f debian/rules build      - Build the Debian package"
 	@echo "  make -f debian/rules package    - Build and show package info"
-	@echo "  make -f debian/rules install    - Build and install the package"
+	@echo "  make -f debian/rules install    - Build and install the package from dist/"
 	@echo "  make -f debian/rules uninstall  - Uninstall the package"
 	@echo "  make -f debian/rules help        - Show this help message"
 	@echo ""
 	@echo "Manual installation:"
-	@echo "  sudo dpkg -i sonda_*.deb"
+	@echo "  sudo dpkg -i dist/sonda_*/sonda_*.deb"
 	@echo "  sudo apt-get install -f  # Install dependencies if needed"
 
 # Debhelper overrides
 override_dh_auto_install:
 	# Install files to debian/sonda/usr/share/sonda
 	mkdir -p debian/sonda/usr/share/sonda
-	cp -r ../src/bin ../src/lib ../src/modules ../assets debian/sonda/usr/share/sonda/
+	cp -r src/bin src/lib src/modules assets debian/sonda/usr/share/sonda/
 	# Install binary to /usr/bin
 	mkdir -p debian/sonda/usr/bin
-	cp ../src/bin/sonda debian/sonda/usr/bin/
+	cp src/bin/sonda debian/sonda/usr/bin/
 	chmod +x debian/sonda/usr/bin/sonda
 	# Install desktop file
 	mkdir -p debian/sonda/usr/share/applications
-	cp ../assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
+	cp assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
 	# Install icon
 	mkdir -p debian/sonda/usr/share/pixmaps
-	cp ../assets/icons/sonda.png debian/sonda/usr/share/pixmaps/
+	cp assets/icons/sonda.png debian/sonda/usr/share/pixmaps/
 	# Install version file to root of installation
-	cp ../VERSION debian/sonda/usr/share/sonda/version
+	cp VERSION debian/sonda/usr/share/sonda/version
 
 # No Python package to process - all Python deps are in Depends
 
