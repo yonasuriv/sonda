@@ -92,17 +92,17 @@ override_dh_auto_install:
 	mkdir -p debian/sonda/usr/share/sonda
 	# Install main binary directory
 	cp -r src/bin debian/sonda/usr/share/sonda/
-	# Install check mode
-	cp -r src/check debian/sonda/usr/share/sonda/
-	# Install audit mode (if exists)
-	if [ -d src/audit ]; then cp -r src/audit debian/sonda/usr/share/sonda/; fi
+	# Install shared lib/core directory
+	cp -r src/lib debian/sonda/usr/share/sonda/
+	# Install modes (check, audit, etc.)
+	cp -r src/modes debian/sonda/usr/share/sonda/
 	# Install shared assets
 	cp -r assets debian/sonda/usr/share/sonda/
 	# Install binary to /usr/bin
 	mkdir -p debian/sonda/usr/bin
 	cp src/bin/sonda debian/sonda/usr/bin/
 	chmod +x debian/sonda/usr/bin/sonda
-	chmod +x debian/sonda/usr/share/sonda/check/init.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/check/cli.sh
 	# Install desktop file
 	mkdir -p debian/sonda/usr/share/applications
 	cp assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/

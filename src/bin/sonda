@@ -19,10 +19,10 @@ fi
 # Priority: 1. Environment variable, 2. System-wide (/usr/share/sonda), 3. Source directory, 4. User local
 if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
     INSTALLDIR="$SONDA_INSTALL_DIR"
-elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/check/lib/style" ]]; then
+elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/modes/check/lib/style" ]]; then
     # System-wide installation (Debian package)
     INSTALLDIR="/usr/share/sonda"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/lib/style" ]] || [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/core/banner" ]]; then
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../modes/check/lib/style" ]] || [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/core/style" ]]; then
     # Running from source directory
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     # VERSION file is at project root, not in src/
@@ -41,11 +41,11 @@ log_info() { :; }
 log_debug() { :; }
 
 # Try to source actual logger if available
-if [[ -f "$INSTALLDIR/check/lib/logger" ]]; then
-    source "$INSTALLDIR/check/lib/logger" 2>/dev/null || true
-elif [[ -f "$INSTALLDIR/lib/logger" ]]; then
+if [[ -f "$INSTALLDIR/modes/check/lib/logger" ]]; then
+    source "$INSTALLDIR/modes/check/lib/logger" 2>/dev/null || true
+elif [[ -f "$INSTALLDIR/check/lib/logger" ]]; then
     # Fallback for old structure
-    source "$INSTALLDIR/lib/logger" 2>/dev/null || true
+    source "$INSTALLDIR/check/lib/logger" 2>/dev/null || true
 fi
 
 # Check if installation directory exists
@@ -88,19 +88,19 @@ MODE="${1:-check}"
 case "$MODE" in
     check|"")
         # Default mode: check
-        if [[ -f "$INSTALLDIR/check/init.sh" ]]; then
-            source "$INSTALLDIR/check/init.sh" "$@"
+        if [[ -f "$INSTALLDIR/modes/check/cli.sh" ]]; then
+            source "$INSTALLDIR/modes/check/cli.sh" "$@"
             exit $?
         else
-            echo "Error: Check mode script not found: $INSTALLDIR/check/init.sh" >&2
+            echo "Error: Check mode script not found: $INSTALLDIR/modes/check/cli.sh" >&2
             log_error "Check mode script not found"
             exit 1
         fi
         ;;
     audit)
         # Audit mode (future)
-        if [[ -f "$INSTALLDIR/audit/init.sh" ]]; then
-            source "$INSTALLDIR/audit/init.sh" "$@"
+        if [[ -f "$INSTALLDIR/modes/audit/cli.sh" ]]; then
+            source "$INSTALLDIR/modes/audit/cli.sh" "$@"
             exit $?
         else
             echo "Error: Audit mode not yet implemented" >&2
@@ -110,8 +110,8 @@ case "$MODE" in
         ;;
     *)
         # Unknown mode, try check mode with all arguments
-        if [[ -f "$INSTALLDIR/check/init.sh" ]]; then
-            source "$INSTALLDIR/check/init.sh" "$@"
+        if [[ -f "$INSTALLDIR/modes/check/cli.sh" ]]; then
+            source "$INSTALLDIR/modes/check/cli.sh" "$@"
             exit $?
         else
             echo "Error: Unknown mode and check mode not available" >&2

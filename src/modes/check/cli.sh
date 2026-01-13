@@ -10,23 +10,23 @@
 set -a
 
 # FOLDERS (check mode specific)
-LIB="$INSTALLDIR/check/lib"
-CORE="$INSTALLDIR/check/core"
-MODULES="$INSTALLDIR/check/modules"
-CONFIG="$INSTALLDIR/check/default.conf"
+LIB="$INSTALLDIR/modes/check/lib"
+SHARED_CORE="$INSTALLDIR/lib/core"
+MODULES="$INSTALLDIR/modes/check/modules"
+CONFIG="$INSTALLDIR/modes/check/default.conf"
 
 # FILES
-STYLE="$LIB/style"
+STYLE="$SHARED_CORE/style"
 LOGIC="$LIB/logic"
 LOGO="$LIB/top"
 LOGGER="$LIB/logger"
 MAN="$LIB/man"
 
-BANNER="$CORE/banner"
-DEFAULT="$CORE/default"
-SYSINFO="$CORE/sysinfo"
-NETINFO="$CORE/netinfo"
-CONFIG_FILE="$CORE/config.sh"
+BANNER="$LIB/banner"
+DEFAULT="$SHARED_CORE/default"
+SYSINFO="$SHARED_CORE/sysinfo"
+NETINFO="$SHARED_CORE/netinfo"
+CONFIG_FILE="$LIB/config.sh"
 
 # Source required files with error handling
 if [[ -f "$STYLE" ]]; then
@@ -47,7 +47,7 @@ if [[ -f "$LOGO" ]]; then
     source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
 fi
 
-# Source config file if it exists
+# Source config file if it exists (optional)
 if [[ -f "$CONFIG_FILE" ]]; then
     source "$CONFIG_FILE" 2>/dev/null || log_warn "Failed to source config file"
 fi
