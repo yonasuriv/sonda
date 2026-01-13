@@ -1,0 +1,139 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# export DH_VERBOSE = 1
+
+# Version and package info
+VERSION := $(shell cat ../src/version 2>/dev/null || echo "1.8.5")
+DEB_VERSION := $(VERSION)-1
+PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
+DIST_DIR := ../dist/sonda_$(DEB_VERSION)
+
+# Standard debhelper targets
+%:
+	dh $@
+
+# Custom targets for building and managing packages
+.PHONY: clean build install package collect help
+
+clean:
+	@echo ""
+	@echo "Cleaning build artifacts..."
+	@echo ""
+	rm -rf debian/sonda
+	rm -rf debian/.debhelper
+	rm -f debian/files
+	rm -f debian/substvars
+	rm -f debian/*.debhelper.log
+	rm -f debian/*.substvars
+	rm -f debian/*.debhelper
+	rm -f debian/*.log
+	rm -f ../$(PACKAGE_NAME)
+	rm -f ../sonda_*.deb
+	rm -f ../sonda_*.buildinfo
+	rm -f ../sonda_*.changes
+	rm -f ../sonda_*.dsc
+	rm -f ../sonda_*.tar.*
+	@echo ""
+	@echo "Done."
+
+collect:
+	@echo ""
+	@echo "Collecting build artifacts..."
+	@mkdir -p $(DIST_DIR)
+	@if [ -f ../$(PACKAGE_NAME) ]; then \
+		cp -a ../$(PACKAGE_NAME) $(DIST_DIR)/; \
+	fi
+	@if [ -f ../sonda_$(DEB_VERSION)_*.buildinfo ]; then \
+		cp -a ../sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f ../sonda_$(DEB_VERSION)_*.changes ]; then \
+		cp -a ../sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f ../sonda_$(DEB_VERSION).dsc ]; then \
+		cp -a ../sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f ../sonda_$(DEB_VERSION).tar.* ]; then \
+		cp -a ../sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@echo "Collected artifacts in $(DIST_DIR)"
+	@echo ""
+
+build: clean
+	@echo ""
+	@echo "Building debian package..."
+	@echo ""
+	cd .. && dpkg-buildpackage -us -uc -b
+	@if [ -f ../$(PACKAGE_NAME) ]; then \
+		echo "Package built: $(PACKAGE_NAME)"; \
+	fi
+	@echo ""
+	@echo "Package built successfully."
+	@cd .. && $(MAKE) -f debian/rules collect
+
+package: build
+	@echo "Package: $(PACKAGE_NAME)"
+	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
+		ls -lh $(DIST_DIR)/$(PACKAGE_NAME); \
+	elif [ -f ../$(PACKAGE_NAME) ]; then \
+		ls -lh ../$(PACKAGE_NAME); \
+	else \
+		echo "Package not found"; \
+	fi
+
+install: package
+	@echo ""
+	@echo "Installing package..."
+	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
+		sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); \
+	elif [ -f ../$(PACKAGE_NAME) ]; then \
+		sudo dpkg -i ../$(PACKAGE_NAME); \
+	else \
+		echo "Error: Package $(PACKAGE_NAME) not found"; \
+		exit 1; \
+	fi
+	@echo "Installation complete!"
+	@echo ""
+
+uninstall:
+	@echo "Uninstalling package..."
+	sudo dpkg -r sonda
+	@echo "Uninstallation complete!"
+
+help:
+	@echo "Sonda Debian Package Build System"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  make -f debian/rules clean      - Clean build artifacts"
+	@echo "  make -f debian/rules build      - Build the Debian package"
+	@echo "  make -f debian/rules package    - Build and show package info"
+	@echo "  make -f debian/rules install    - Build and install the package"
+	@echo "  make -f debian/rules uninstall  - Uninstall the package"
+	@echo "  make -f debian/rules help        - Show this help message"
+	@echo ""
+	@echo "Manual installation:"
+	@echo "  sudo dpkg -i sonda_*.deb"
+	@echo "  sudo apt-get install -f  # Install dependencies if needed"
+
+# Debhelper overrides
+override_dh_auto_install:
+	# Install files to debian/sonda/usr/share/sonda
+	mkdir -p debian/sonda/usr/share/sonda
+	cp -r ../src/bin ../src/lib ../src/modules ../assets debian/sonda/usr/share/sonda/
+	# Install binary to /usr/bin
+	mkdir -p debian/sonda/usr/bin
+	cp ../src/bin/sonda debian/sonda/usr/bin/
+	chmod +x debian/sonda/usr/bin/sonda
+	# Install desktop file
+	mkdir -p debian/sonda/usr/share/applications
+	cp ../assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
+	# Install icon
+	mkdir -p debian/sonda/usr/share/pixmaps
+	cp ../assets/icons/sonda.png debian/sonda/usr/share/pixmaps/
+	# Install version file to root of installation
+	cp ../src/version debian/sonda/usr/share/sonda/
+
+# No Python package to process - all Python deps are in Depends
+
+override_dh_auto_build:
+	# No build step needed for bash scripts
+	@echo "No build step required"
