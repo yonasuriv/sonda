@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: Fast rebuild and/or install the sonda .deb.
-# Usage: ./dev.sh [rebuild|install|deps|all]
+# Purpose: Fast build and/or install the sonda .deb.
+# Usage: ./dev.sh [build|install|deps|all]
 # Notes: Runs make in current dir. Installs sonda_*.deb via sudo dpkg -i.
 
 set -euo pipefail
@@ -152,18 +152,35 @@ EOF
   echo "Build dependencies satisfied."
 }
 
-rebuild() {
+build() {
   make clean
   make build | tail -3
 }
 
 install() {
-  # Find the .deb file in current directory
+  # Find the .deb file - check dist/ directory first, then root
   local deb_file
-  deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f | head -n 1)
+  local version
+  
+  # Try to get version from src/version or from dist directory
+  if [[ -f src/version ]]; then
+    version=$(cat src/version)
+  else
+    version="unknown"
+  fi
+  
+  # Check dist directory first (preferred location)
+  if [[ -d "dist" ]]; then
+    deb_file=$(find dist -name "sonda_*.deb" -type f | sort -V | tail -n 1)
+  fi
+  
+  # Fallback to root directory
+  if [[ -z "$deb_file" ]]; then
+    deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f | head -n 1)
+  fi
   
   if [[ -z "$deb_file" ]]; then
-    die "No sonda_*.deb file found in current directory. Run 'rebuild' first."
+    die "No sonda_*.deb file found. Run 'rebuild' first."
   fi
   
   echo "Installing $deb_file..."
@@ -172,17 +189,17 @@ install() {
 
 case "${1:-}" in
   deps)     check_deps ;;
-  rebuild)  rebuild ;;
+  build)  build ;;
   install)  install ;;
-  ""|all)   check_deps; rebuild; install ;;
+  ""|all)   check_deps; build; install ;;
   *)
-    echo "Usage: $0 [deps|rebuild|install|all]" >&2
+    echo "Usage: $0 [deps|build|install|all]" >&2
     echo "" >&2
     echo "Commands:" >&2
     echo "  deps     - Check and install build dependencies" >&2
-    echo "  rebuild  - Clean and build the .deb package" >&2
+    echo "  build  - Clean and build the .deb package" >&2
     echo "  install  - Install the built .deb package" >&2
-    echo "  all      - Run deps, rebuild, and install (default)" >&2
+    echo "  all      - Run deps, build, and install (default)" >&2
     exit 2
     ;;
 esac

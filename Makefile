@@ -5,6 +5,7 @@
 VERSION := $(shell cat src/version 2>/dev/null || echo "1.8.5")
 DEB_VERSION := $(VERSION)-1
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
+DIST_DIR := dist/sonda_$(DEB_VERSION)
 
 clean:
 	@echo ""
@@ -21,8 +22,34 @@ clean:
 	rm -f $(PACKAGE_NAME)
 	rm -f sonda_*.deb
 	rm -f packagng/../sonda_*.deb
+	rm -f packagng/../sonda_*.buildinfo
+	rm -f packagng/../sonda_*.changes
+	rm -f packagng/../sonda_*.dsc
+	rm -f packagng/../sonda_*.tar.*
 	@echo ""
 	@echo "Done."
+
+collect:
+	@echo ""
+	@echo "Collecting build artifacts..."
+	@mkdir -p $(DIST_DIR)
+	@if [ -f $(PACKAGE_NAME) ]; then \
+		cp -a $(PACKAGE_NAME) $(DIST_DIR)/; \
+	fi
+	@if [ -f sonda_$(DEB_VERSION)_*.buildinfo ]; then \
+		cp -a sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f sonda_$(DEB_VERSION)_*.changes ]; then \
+		cp -a sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f sonda_$(DEB_VERSION).dsc ]; then \
+		cp -a sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@if [ -f sonda_$(DEB_VERSION).tar.* ]; then \
+		cp -a sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; \
+	fi
+	@echo "Collected artifacts in $(DIST_DIR)"
+	@echo ""
 
 build: clean
 	@echo ""
@@ -34,22 +61,27 @@ build: clean
 	fi
 	@echo ""
 	@echo "Package built successfully."
+	@$(MAKE) collect
 
 package: build
 	@echo "Package: $(PACKAGE_NAME)"
-	@if [ -f $(PACKAGE_NAME) ]; then \
+	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
+		ls -lh $(DIST_DIR)/$(PACKAGE_NAME); \
+	elif [ -f $(PACKAGE_NAME) ]; then \
 		ls -lh $(PACKAGE_NAME); \
 	else \
-		echo "Package not found in root directory"; \
+		echo "Package not found"; \
 	fi
 
 install: package
 	@echo ""
 	@echo "Installing package..."
-	@if [ -f $(PACKAGE_NAME) ]; then \
+	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
+		sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); \
+	elif [ -f $(PACKAGE_NAME) ]; then \
 		sudo dpkg -i $(PACKAGE_NAME); \
 	else \
-		echo "Error: Package $(PACKAGE_NAME) not found in root directory"; \
+		echo "Error: Package $(PACKAGE_NAME) not found"; \
 		exit 1; \
 	fi
 	@echo "Installation complete!"

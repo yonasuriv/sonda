@@ -39,13 +39,14 @@ packagng/debian/*.debhelper
 packagng/debian/*.log
 packagng/debian/debhelper-build-stamp
 packagng/debian/sonda.substvars
-# Built packages (in root directory)
+# Built packages and distribution directory
 *.deb
 *.buildinfo
 *.changes
 *.dsc
 *.tar.gz
 *.tar.xz
+dist/
 
 # Logs
 *.log
