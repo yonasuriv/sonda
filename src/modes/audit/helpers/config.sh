@@ -2,7 +2,7 @@
 # Configuration and default values
 
 # Load paths first (if not already loaded)
-if [[ -z "$AUDIT_PROJECT_ROOT" ]]; then
+if [[ -z "${AUDIT_PROJECT_ROOT:-}" ]]; then
     source "${BASH_SOURCE[0]%/*}/paths.sh"
 fi
 
