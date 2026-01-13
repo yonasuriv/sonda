@@ -8,12 +8,8 @@ function kernel_boot_params {
 # 12. Kernel Modules
 function kernel_modules {
     # lsmod shows the currently loaded kernel modules.
-    if [[ "$key" == "-all" ]]; then
-        echo -e "${LB}${YELLOW}[!] Loaded Kernel Modules skipped. Only available with -ald or -kernel"
-    else
-        echo -e "${LB}${CYAN}[#] Loaded Kernel Modules ${BLUE}(lsmod)${RT}${LB}"
-        pprint "lsmod"
-    fi
+    echo -e "${LB}${CYAN}[#] Loaded Kernel Modules ${BLUE}(lsmod)${RT}${LB}"
+    pprint "lsmod"
 }
 
 # TODO: Kernel errors and warnings
