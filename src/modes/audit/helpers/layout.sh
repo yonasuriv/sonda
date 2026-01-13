@@ -32,8 +32,8 @@ print_header() {
 # Print phase header (with phase number)
 # If phase_num and phase_name are not provided, auto-detect from calling script's filename
 print_phase_header() {
-    local phase_num="$1"
-    local phase_name="$2"
+    local phase_num="${1:-}"
+    local phase_name="${2:-}"
     
     # Auto-detect phase ID and name from calling script's filename if not provided
     if [[ -z "$phase_num" ]] || [[ -z "$phase_name" ]]; then
