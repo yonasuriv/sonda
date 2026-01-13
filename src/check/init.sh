@@ -11,9 +11,9 @@ set -a
 
 # FOLDERS (check mode specific)
 LIB="$INSTALLDIR/check/lib"
+CORE="$INSTALLDIR/check/core"
 MODULES="$INSTALLDIR/check/modules"
-MODBASE="$MODULES/base"
-MODINFO="$MODULES/info"
+CONFIG="$INSTALLDIR/check/default.conf"
 
 # FILES
 STYLE="$LIB/style"
@@ -22,10 +22,11 @@ LOGO="$LIB/top"
 LOGGER="$LIB/logger"
 MAN="$LIB/man"
 
-BANNER="$MODBASE/banner"
-DEFAULT="$MODBASE/default"
-SYSINFO="$MODBASE/sysinfo"
-NETINFO="$MODBASE/netinfo"
+BANNER="$CORE/banner"
+DEFAULT="$CORE/default"
+SYSINFO="$CORE/sysinfo"
+NETINFO="$CORE/netinfo"
+CONFIG_FILE="$CORE/config.sh"
 
 # Source required files with error handling
 if [[ -f "$STYLE" ]]; then
@@ -46,10 +47,15 @@ if [[ -f "$LOGO" ]]; then
     source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
 fi
 
-# Source info modules
+# Source config file if it exists
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE" 2>/dev/null || log_warn "Failed to source config file"
+fi
+
+# Source info modules (now directly in modules/)
 for module in battery boot cpu devices disks gpu kernel memory network packages security; do
-    if [[ -f "$MODINFO/$module" ]]; then
-        source "$MODINFO/$module" 2>/dev/null || log_warn "Failed to source module: $module"
+    if [[ -f "$MODULES/$module" ]]; then
+        source "$MODULES/$module" 2>/dev/null || log_warn "Failed to source module: $module"
     fi
 done
 

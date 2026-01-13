@@ -22,7 +22,7 @@ if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
 elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/check/lib/style" ]]; then
     # System-wide installation (Debian package)
     INSTALLDIR="/usr/share/sonda"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/lib/style" ]]; then
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/lib/style" ]] || [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/core/banner" ]]; then
     # Running from source directory
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     # VERSION file is at project root, not in src/
