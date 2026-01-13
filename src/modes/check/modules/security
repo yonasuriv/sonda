@@ -39,8 +39,10 @@ function security_firewall {
     # Check iptables
     if command -v iptables >/dev/null 2>&1; then
         found=1
-        iptables_rules=$(iptables -S 2>/dev/null | wc -l || echo "0")
-        if [[ "$iptables_rules" -gt 0 ]]; then
+        iptables_rules=$(iptables -S 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        # Remove whitespace from iptables_rules
+        iptables_rules=$(echo "$iptables_rules" | tr -d '[:space:]')
+        if [[ -n "$iptables_rules" ]] && [[ "$iptables_rules" != "0" ]] && [[ "$iptables_rules" =~ ^[0-9]+$ ]] && [[ "$iptables_rules" -gt 0 ]]; then
             echo -e "${GREEN2}[+] iptables: Active ($iptables_rules rules)${RT}"
         else
             echo -e "${YELLOW2}[!] iptables: No rules found${RT}"
