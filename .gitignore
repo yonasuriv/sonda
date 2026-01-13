@@ -29,6 +29,17 @@ debian/*.substvars
 debian/*.debhelper
 debian/*.log
 debian/debhelper-build-stamp
+packagng/debian/sonda/
+packagng/debian/.debhelper/
+packagng/debian/files
+packagng/debian/substvars
+packagng/debian/*.debhelper.log
+packagng/debian/*.substvars
+packagng/debian/*.debhelper
+packagng/debian/*.log
+packagng/debian/debhelper-build-stamp
+packagng/debian/sonda.substvars
+# Built packages (in root directory)
 *.deb
 *.buildinfo
 *.changes

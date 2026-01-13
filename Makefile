@@ -29,17 +29,29 @@ build: clean
 	@echo "Building debian package..."
 	@echo ""
 	cd packagng && dpkg-buildpackage -us -uc -b
+	@if [ -f $(PACKAGE_NAME) ]; then \
+		echo "Package built in root directory: $(PACKAGE_NAME)"; \
+	fi
 	@echo ""
 	@echo "Package built successfully."
 
 package: build
 	@echo "Package: $(PACKAGE_NAME)"
-	@ls -lh packagng/../$(PACKAGE_NAME) 2>/dev/null || ls -lh packagng/$(PACKAGE_NAME) 2>/dev/null || ls -lh $(PACKAGE_NAME) 2>/dev/null || echo "Package location may vary"
+	@if [ -f $(PACKAGE_NAME) ]; then \
+		ls -lh $(PACKAGE_NAME); \
+	else \
+		echo "Package not found in root directory"; \
+	fi
 
 install: package
 	@echo ""
 	@echo "Installing package..."
-	sudo dpkg -i packagng/../$(PACKAGE_NAME) 2>/dev/null || sudo dpkg -i packagng/$(PACKAGE_NAME) 2>/dev/null || sudo dpkg -i $(PACKAGE_NAME) 2>/dev/null || echo "Please install manually: sudo dpkg -i $(PACKAGE_NAME)"
+	@if [ -f $(PACKAGE_NAME) ]; then \
+		sudo dpkg -i $(PACKAGE_NAME); \
+	else \
+		echo "Error: Package $(PACKAGE_NAME) not found in root directory"; \
+		exit 1; \
+	fi
 	@echo "Installation complete!"
 	@echo ""
 
