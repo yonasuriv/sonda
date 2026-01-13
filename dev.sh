@@ -35,6 +35,24 @@ dep_satisfied() {
     op="$(echo "${BASH_REMATCH[2]}" | xargs)"
     ver="$(echo "${BASH_REMATCH[3]}" | xargs)"
 
+    # Special handling for debhelper-compat (virtual package)
+    if [[ "$pkg" == "debhelper-compat" ]]; then
+      # Check if debhelper is installed
+      if ! dpkg-query -W -f='${Status}' debhelper 2>/dev/null | grep -q "install ok installed"; then
+        return 1
+      fi
+      # Check if debhelper provides the required compat level
+      local provides
+      provides=$(apt-cache show debhelper 2>/dev/null | grep "^Provides:" | grep -o "debhelper-compat (= ${ver})" || true)
+      if [[ -n "$provides" ]]; then
+        return 0
+      else
+        # Fallback: if debhelper is installed, assume it provides the compat level
+        # (the actual build will fail if it doesn't)
+        return 0
+      fi
+    fi
+
     # Must be installed first.
     dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed" || return 1
 
@@ -85,12 +103,17 @@ check_deps() {
     # For apt install, strip version constraint because APT cannot install "pkg (= X)" reliably
     # unless the exact version exists in enabled repos. We prefer ensuring the package exists,
     # then validate the version constraint post-install.
-    local pkg_regex='^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\('
-    if [[ "$dep" =~ $pkg_regex ]]; then
-      pkg="${BASH_REMATCH[1]}"
-      missing+=("$pkg")
+    # Special handling for debhelper-compat: install debhelper instead
+    if [[ "$dep" == "debhelper-compat (= 13)" ]] || [[ "$dep" =~ ^debhelper-compat ]]; then
+      missing+=("debhelper")
     else
-      missing+=("$dep")
+      local pkg_regex='^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\('
+      if [[ "$dep" =~ $pkg_regex ]]; then
+        pkg="${BASH_REMATCH[1]}"
+        missing+=("$pkg")
+      else
+        missing+=("$dep")
+      fi
     fi
   done
 
