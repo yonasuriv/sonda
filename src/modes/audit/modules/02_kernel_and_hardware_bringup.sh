@@ -21,8 +21,9 @@ if [[ "$SUDO_AVAILABLE" == true ]]; then
         log_detailed "$HW_DETAILS_LOG"
     fi
 else
-    HARDWARE_ERRORS=$($DMESG_BASE 2>/dev/null | grep -iE "(mce|aer|pcie|nvme|iommu|machine check|hardware error|uncorrectable|corrected error)" | wc -l || echo "0")
-    if [[ $HARDWARE_ERRORS -eq 0 ]]; then
+    HARDWARE_ERRORS=$($DMESG_BASE 2>/dev/null | grep -iE "(mce|aer|pcie|nvme|iommu|machine check|hardware error|uncorrectable|corrected error)" | wc -l 2>/dev/null || echo "0")
+    HARDWARE_ERRORS=$(echo "$HARDWARE_ERRORS" | tr -d '[:space:]')
+    if [[ -n "$HARDWARE_ERRORS" ]] && [[ "$HARDWARE_ERRORS" =~ ^[0-9]+$ ]] && [[ $HARDWARE_ERRORS -eq 0 ]]; then
         skip "Hardware error check (sudo required for complete dmesg access)"
     else
         fail "Found $HARDWARE_ERRORS hardware error(s) (limited access)"
@@ -38,8 +39,9 @@ fi
 
 # Test case 2: Kernel errors
 if [[ "$SUDO_AVAILABLE" == true ]]; then
-    KERNEL_ERRORS=$($SUDO_DMESG_ERR 2>/dev/null | wc -l)
-    if [[ $KERNEL_ERRORS -eq 0 ]]; then
+    KERNEL_ERRORS=$($SUDO_DMESG_ERR 2>/dev/null | wc -l 2>/dev/null || echo "0")
+    KERNEL_ERRORS=$(echo "$KERNEL_ERRORS" | tr -d '[:space:]')
+    if [[ -n "$KERNEL_ERRORS" ]] && [[ "$KERNEL_ERRORS" =~ ^[0-9]+$ ]] && [[ $KERNEL_ERRORS -eq 0 ]]; then
         pass "No kernel errors"
     else
         fail "Found $KERNEL_ERRORS kernel error(s)"
@@ -52,8 +54,9 @@ if [[ "$SUDO_AVAILABLE" == true ]]; then
         log_detailed "$KERNEL_DETAILS_LOG"
     fi
 else
-    KERNEL_ERRORS=$($DMESG_ERR 2>/dev/null | wc -l || echo "0")
-    if [[ $KERNEL_ERRORS -eq 0 ]]; then
+    KERNEL_ERRORS=$($DMESG_ERR 2>/dev/null | wc -l 2>/dev/null || echo "0")
+    KERNEL_ERRORS=$(echo "$KERNEL_ERRORS" | tr -d '[:space:]')
+    if [[ -n "$KERNEL_ERRORS" ]] && [[ "$KERNEL_ERRORS" =~ ^[0-9]+$ ]] && [[ $KERNEL_ERRORS -eq 0 ]]; then
         skip "Kernel error check (sudo required for full access)"
     else
         fail "Found $KERNEL_ERRORS kernel error(s) (limited access)"
