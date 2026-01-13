@@ -6,7 +6,8 @@ print_phase_header
 
 # Test case 1: Hardware errors (MCE, AER, PCIe, NVMe, IOMMU)
 if [[ "$SUDO_AVAILABLE" == true ]]; then
-    HARDWARE_ERRORS=$($SUDO_DMESG_BASE 2>/dev/null | grep -iE "(mce|aer|pcie|nvme|iommu|machine check|hardware error|uncorrectable|corrected error)" | wc -l)
+    HARDWARE_ERRORS=$($SUDO_DMESG_BASE 2>/dev/null | grep -iE "(mce|aer|pcie|nvme|iommu|machine check|hardware error|uncorrectable|corrected error)" | wc -l 2>/dev/null || echo "0")
+    HARDWARE_ERRORS=$(echo "$HARDWARE_ERRORS" | tr -d '[:space:]')
     if [[ $HARDWARE_ERRORS -eq 0 ]]; then
         pass "No hardware errors detected"
     else
@@ -72,7 +73,8 @@ fi
 
 # Test case 3: Kernel warnings
 if [[ "$SUDO_AVAILABLE" == true ]]; then
-    KERNEL_WARNINGS=$($SUDO_DMESG_WARN 2>/dev/null | wc -l)
+    KERNEL_WARNINGS=$($SUDO_DMESG_WARN 2>/dev/null | wc -l 2>/dev/null || echo "0")
+    KERNEL_WARNINGS=$(echo "$KERNEL_WARNINGS" | tr -d '[:space:]')
     if [[ $KERNEL_WARNINGS -eq 0 ]]; then
         pass "No kernel warnings"
     else
@@ -90,7 +92,8 @@ else
 fi
 
 # Test case 4: Kernel module load failures
-MODULE_FAILURES=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "modprobe.*fail|insmod.*fail|module.*fail.*load" | wc -l)
+MODULE_FAILURES=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "modprobe.*fail|insmod.*fail|module.*fail.*load" | wc -l 2>/dev/null || echo "0")
+MODULE_FAILURES=$(echo "$MODULE_FAILURES" | tr -d '[:space:]')
 if [[ $MODULE_FAILURES -eq 0 ]]; then
     pass "No kernel module load failures"
 else
@@ -106,7 +109,8 @@ fi
 
 # Test case 5: GPU driver initialization
 if [[ "$SUDO_AVAILABLE" == true ]]; then
-    GPU_INIT_ERRORS=$($SUDO_DMESG_BASE 2>/dev/null | grep -iE "(gpu|drm|radeon|nvidia|intel|amdgpu).*(init|probe|fail|error)" | wc -l)
+    GPU_INIT_ERRORS=$($SUDO_DMESG_BASE 2>/dev/null | grep -iE "(gpu|drm|radeon|nvidia|intel|amdgpu).*(init|probe|fail|error)" | wc -l 2>/dev/null || echo "0")
+    GPU_INIT_ERRORS=$(echo "$GPU_INIT_ERRORS" | tr -d '[:space:]')
     if [[ $GPU_INIT_ERRORS -eq 0 ]]; then
         pass "GPU driver initialization successful"
     else
@@ -124,7 +128,8 @@ else
 fi
 
 # Test case 6: ACPI/Firmware issues
-ACPI_ERRORS=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "acpi.*error|firmware.*bug|acpi.*fail" | wc -l)
+ACPI_ERRORS=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "acpi.*error|firmware.*bug|acpi.*fail" | wc -l 2>/dev/null || echo "0")
+ACPI_ERRORS=$(echo "$ACPI_ERRORS" | tr -d '[:space:]')
 if [[ $ACPI_ERRORS -eq 0 ]]; then
     pass "No ACPI/firmware errors detected"
 else
@@ -174,7 +179,8 @@ if command -v udevadm >/dev/null 2>&1; then
     fi
     
     # Check for udev errors in journal
-    UDEV_JOURNAL_ERRORS=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "udev|systemd-udevd" | grep -iE "error|fail" | wc -l)
+    UDEV_JOURNAL_ERRORS=$($JOURNALCTL_BASE 2>/dev/null | grep -iE "udev|systemd-udevd" | grep -iE "error|fail" | wc -l 2>/dev/null || echo "0")
+    UDEV_JOURNAL_ERRORS=$(echo "$UDEV_JOURNAL_ERRORS" | tr -d '[:space:]')
     if [[ $UDEV_JOURNAL_ERRORS -eq 0 ]]; then
         pass "No udev errors in journal"
     else
