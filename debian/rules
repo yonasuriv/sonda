@@ -63,9 +63,7 @@ build: clean
 	@echo "Building debian package..."
 	@echo ""
 	cd .. && dpkg-buildpackage -us -uc -b
-	@if [ -f ../$(PACKAGE_NAME) ]; then \
-		echo "Package built: $(PACKAGE_NAME)"; \
-	fi
+	@bash -c 'if [ -f ../$(PACKAGE_NAME) ]; then echo "Package built: $(PACKAGE_NAME)"; fi'
 	@echo ""
 	@echo "Package built successfully."
 	@cd .. && $(MAKE) -f debian/rules collect
