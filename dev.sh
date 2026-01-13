@@ -159,7 +159,7 @@ build() {
 
 install() {
   # Find the .deb file - check dist/ directory first, then root
-  local deb_file
+  local deb_file=""
   local version
   
   # Try to get version from src/version or from dist directory
@@ -171,15 +171,15 @@ install() {
   
   # Check dist directory first (preferred location)
   if [[ -d "dist" ]]; then
-    deb_file=$(find dist -name "sonda_*.deb" -type f | sort -V | tail -n 1)
+    deb_file=$(find dist -name "sonda_*.deb" -type f 2>/dev/null | sort -V | tail -n 1 || true)
   fi
   
   # Fallback to root directory
-  if [[ -z "$deb_file" ]]; then
-    deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f | head -n 1)
+  if [[ -z "${deb_file:-}" ]]; then
+    deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f 2>/dev/null | head -n 1 || true)
   fi
   
-  if [[ -z "$deb_file" ]]; then
+  if [[ -z "${deb_file:-}" ]]; then
     die "No sonda_*.deb file found. Run 'rebuild' first."
   fi
   
