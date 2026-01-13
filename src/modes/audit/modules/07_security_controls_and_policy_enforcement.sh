@@ -123,8 +123,9 @@ fi
 # nftables
 if command -v nft >/dev/null 2>&1; then
     FIREWALL_FOUND=1
-    NFT_RULES=$(nft list ruleset 2>/dev/null | wc -l || echo "0")
-    if [[ $NFT_RULES -gt 0 ]]; then
+    NFT_RULES=$(nft list ruleset 2>/dev/null | wc -l 2>/dev/null || echo "0")
+    NFT_RULES=$(echo "$NFT_RULES" | tr -d '[:space:]')
+    if [[ -n "$NFT_RULES" ]] && [[ "$NFT_RULES" =~ ^[0-9]+$ ]] && [[ $NFT_RULES -gt 0 ]]; then
         pass "nftables is active ($NFT_RULES rules)"
         if [[ "$AUDIT_VERBOSE" == true ]]; then
             NFT_RULESET=$(nft list ruleset 2>/dev/null)
@@ -143,8 +144,9 @@ fi
 # iptables
 if command -v iptables >/dev/null 2>&1; then
     FIREWALL_FOUND=1
-    IPT_RULES=$(iptables -S 2>/dev/null | wc -l || echo "0")
-    if [[ $IPT_RULES -gt 0 ]]; then
+    IPT_RULES=$(iptables -S 2>/dev/null | wc -l 2>/dev/null || echo "0")
+    IPT_RULES=$(echo "$IPT_RULES" | tr -d '[:space:]')
+    if [[ -n "$IPT_RULES" ]] && [[ "$IPT_RULES" =~ ^[0-9]+$ ]] && [[ $IPT_RULES -gt 0 ]]; then
         pass "iptables is active ($IPT_RULES rules)"
         if [[ "$AUDIT_VERBOSE" == true ]]; then
             IPT_RULESET=$(iptables -S 2>/dev/null)
