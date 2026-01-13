@@ -25,6 +25,10 @@ elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/check/lib/style" ]];
 elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../check/lib/style" ]]; then
     # Running from source directory
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    # VERSION file is at project root, not in src/
+    if [[ -f "$(dirname "$INSTALLDIR")/VERSION" ]]; then
+        export VERSION_FILE="$(cd "$(dirname "$INSTALLDIR")" && pwd)/VERSION"
+    fi
 else
     # Fallback to user local (legacy)
     INSTALLDIR="$HOMEUSER/.local/share/sonda"
@@ -58,8 +62,10 @@ set -a
 export INSTALLDIR
 export HOMEUSER
 
-# Version file is now in root directory
-export VERSION_FILE="$INSTALLDIR/version"
+# Version file is now in root directory (set above if from source, otherwise here)
+if [[ -z "${VERSION_FILE:-}" ]]; then
+    export VERSION_FILE="$INSTALLDIR/version"
+fi
 
 # ASSETS (shared across modes)
 export ASSETS="$INSTALLDIR/assets"
