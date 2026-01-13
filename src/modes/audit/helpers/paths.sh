@@ -21,7 +21,7 @@ get_project_root() {
     fi
     
     # If already set (e.g., from audit.sh), use it
-    if [[ -n "$AUDIT_PROJECT_ROOT" && -d "$AUDIT_PROJECT_ROOT" ]]; then
+    if [[ -n "${AUDIT_PROJECT_ROOT:-}" && -d "${AUDIT_PROJECT_ROOT:-}" ]]; then
         echo "$AUDIT_PROJECT_ROOT"
         return 0
     fi
