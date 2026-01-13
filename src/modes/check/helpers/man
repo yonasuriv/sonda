@@ -1,8 +1,8 @@
 
-Usage:
-        sonda <command>
-        sonda -T <target> [flags]
-        sonda --update | --upgrade | --version | -h | --help
+Usage (Check Mode):
+        sonda -C <command>
+        sonda -C -T <target> [flags]
+        sonda -C --update | --upgrade | --version | -h | --help
 
 Commands:
         sys (default)         Show system information (CPU, memory, devices, etc.)
@@ -37,9 +37,9 @@ Meta:
         -h,--help             Show this help message and exit
 
 Examples:
-        sonda net
-        sonda -T cpu
-        sonda -T all -s -nc -v8
-        sonda --update
+        sonda -C net
+        sonda -C -T cpu
+        sonda -C -T all -s -nc -v
+        sonda -C --update
 
 !NOTES: All targets requireS -T, flags can be used with any target and only with -T.

@@ -17,9 +17,13 @@ logo_sonda_script() {
 
 logo_sonda_sysnet() {
     if command -v lolcat >/dev/null 2>&1; then
-        bash $ASSETS/art/sonda_sysnet_1 | lolcat
+        if [[ -f "$ASSETS/art/sonda_sysnet_1" ]]; then
+            bash "$ASSETS/art/sonda_sysnet_1" | lolcat 2>/dev/null || bash "$ASSETS/art/sonda_sysnet_1"
+        fi
     else
-        bash $ASSETS/art/sonda_sysnet_1
+        if [[ -f "$ASSETS/art/sonda_sysnet_1" ]]; then
+            bash "$ASSETS/art/sonda_sysnet_1"
+        fi
     fi
 }
 

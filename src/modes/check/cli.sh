@@ -568,7 +568,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         
         -h|--help)
-            log_info "Showing help"
+            log_info "Showing check mode help"
             if type logo_sonda_sysnet &>/dev/null; then
                 logo_sonda_sysnet
             fi

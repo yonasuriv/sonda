@@ -111,13 +111,12 @@ export AUDIT_ADD_TIMESTAMP=${AUDIT_ADD_TIMESTAMP:-${AUDIT_LOG_TIMESTAMP:-false}}
 export AUDIT_ADD_USER=${AUDIT_ADD_USER:-${AUDIT_LOG_USER:-false}}
 
 # shellcheck disable=SC1091  # Dynamic source path
-# Try lib first (new name), fall back to core (old name) for backward compatibility
-if [[ -f "$SRC_DIR/audit/lib/init.sh" ]]; then
-    source "$SRC_DIR/audit/lib/init.sh"
-elif [[ -f "$SRC_DIR/audit/lib/init.sh" ]]; then
-    source "$SRC_DIR/audit/lib/init.sh"
+# Use AUDIT_LIB from sonda.conf (already exported)
+AUDIT_INIT="$AUDIT_LIB/init.sh"
+if [[ -f "$AUDIT_INIT" ]]; then
+    source "$AUDIT_INIT"
 else
-    echo "Error: Cannot find init.sh in lib/ or lib/ directory" >&2
+    echo "Error: Cannot find init.sh at $AUDIT_INIT" >&2
     exit 1
 fi
 
