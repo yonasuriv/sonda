@@ -10,11 +10,17 @@
 # Start timer
 AUDIT_START_TIME=$(date +%s.%N)
 
-# Use exported paths from main script (avoid repetition)
-AUDIT_DIR="${AUDIT_MODE_DIR:-$INSTALLDIR/modes/audit}"
-SCRIPT_DIR="$AUDIT_DIR"
-PROJECT_ROOT="$INSTALLDIR"
-SRC_DIR="$INSTALLDIR"
+# Use exported paths from sonda.conf (already exported by main script)
+# All paths are now defined in sonda.conf
+AUDIT_DIR="$AUDIT_MODE_DIR"
+SCRIPT_DIR="$AUDIT_SCRIPT_DIR"
+PROJECT_ROOT="$AUDIT_PROJECT_ROOT"
+SRC_DIR="$AUDIT_SRC_DIR"
+
+LIB="$AUDIT_LIB"
+SHARED_CORE="$SONDA_SHARED_CORE"
+MODULES="$AUDIT_MODULES"
+CONFIG="$AUDIT_CONFIG"
 
 # Load default configuration if it exists (before parsing arguments)
 # This allows default.conf to set defaults that can be overridden by command line

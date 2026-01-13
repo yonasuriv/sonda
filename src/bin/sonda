@@ -70,12 +70,21 @@ fi
 # ASSETS (shared across modes)
 export ASSETS="$INSTALLDIR/assets"
 
-# MODE PATHS (defined once, reused)
+# MODE PATHS (defined once, reused - needed before sourcing sonda.conf)
 export MODES_DIR="$INSTALLDIR/modes"
 export CHECK_MODE_DIR="$MODES_DIR/check"
 export AUDIT_MODE_DIR="$MODES_DIR/audit"
 export SHARED_LIB_DIR="$INSTALLDIR/lib"
 export SHARED_CORE_DIR="$SHARED_LIB_DIR/core"
+
+# Source master configuration file
+SONDA_CONF="$SHARED_CORE_DIR/sonda.conf"
+if [[ -f "$SONDA_CONF" ]]; then
+    source "$SONDA_CONF" 2>/dev/null || log_warn "Failed to source sonda.conf"
+else
+    log_error "Master configuration file not found: $SONDA_CONF"
+    exit 1
+fi
 
 # Mode script paths
 export CHECK_CLI="$CHECK_MODE_DIR/cli.sh"
@@ -91,17 +100,35 @@ export LOGFILE="$LOGFILE_DIR/system_$(date +%Y%m%d_%H%M%S).log"
 
 set +a
 
-# Determine mode (default to check for now)
-MODE="${1:-check}"
+# Parse command line arguments for mode selection
+MODE="check"  # Default mode
+ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -C|--check)
+            MODE="check"
+            shift
+            ;;
+        -A|--audit)
+            MODE="audit"
+            shift
+            ;;
+        *)
+            # Not a mode flag, add to args
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
 
 # Route to appropriate mode script
 # Use source instead of exec to preserve functions and variables
-# Shift mode argument so it's not passed to the mode script
 case "$MODE" in
-    check|"")
-        # Default mode: check - pass all arguments (including empty)
+    check)
+        # Check mode
         if [[ -f "$CHECK_CLI" ]]; then
-            source "$CHECK_CLI" "$@"
+            source "$CHECK_CLI" "${ARGS[@]}"
             exit $?
         else
             echo "Error: Check mode script not found: $CHECK_CLI" >&2
@@ -110,10 +137,9 @@ case "$MODE" in
         fi
         ;;
     audit)
-        # Audit mode - shift "audit" argument before passing to script
-        shift
+        # Audit mode
         if [[ -f "$AUDIT_CLI" ]]; then
-            source "$AUDIT_CLI" "$@"
+            source "$AUDIT_CLI" "${ARGS[@]}"
             exit $?
         else
             echo "Error: Audit mode script not found: $AUDIT_CLI" >&2
@@ -122,12 +148,12 @@ case "$MODE" in
         fi
         ;;
     *)
-        # Unknown mode, try check mode with all arguments
+        # Unknown mode, default to check
         if [[ -f "$CHECK_CLI" ]]; then
-            source "$CHECK_CLI" "$@"
+            source "$CHECK_CLI" "${ARGS[@]}"
             exit $?
         else
-            echo "Error: Unknown mode and check mode not available" >&2
+            echo "Error: Check mode not available" >&2
             exit 1
         fi
         ;;

@@ -7,26 +7,27 @@
 # INSTALLDIR, HOMEUSER, VERSION_FILE, ASSETS, LOGFILE_DIR, LOGFILE are exported
 
 # Check mode specific paths
+# All paths are now defined in sonda.conf and exported by main script
 set -a
 
-# FOLDERS (check mode specific - use exported paths from main script)
-LIB="$CHECK_MODE_DIR/lib"
-SHARED_CORE="$SHARED_CORE_DIR"
-MODULES="$CHECK_MODE_DIR/modules"
-CONFIG="$CHECK_MODE_DIR/default.conf"
+# Use variables from sonda.conf (already exported)
+LIB="$CHECK_LIB"
+SHARED_CORE="$SONDA_SHARED_CORE"
+MODULES="$CHECK_MODULES"
+CONFIG="$CHECK_CONFIG"
 
-# FILES
-STYLE="$SHARED_CORE/style"
-LOGIC="$LIB/logic"
-LOGO="$LIB/top"
-LOGGER="$LIB/logger"
-MAN="$LIB/man"
+# FILES (using variables from sonda.conf)
+STYLE="$CHECK_STYLE"
+LOGIC="$CHECK_LOGIC"
+LOGO="$CHECK_LOGO"
+LOGGER="$CHECK_LOGGER"
+MAN="$CHECK_MAN"
 
-BANNER="$LIB/banner"
-DEFAULT="$SHARED_CORE/default"
-SYSINFO="$SHARED_CORE/sysinfo"
-NETINFO="$SHARED_CORE/netinfo"
-CONFIG_FILE="$LIB/config.sh"
+BANNER="$CHECK_BANNER"
+DEFAULT="$CHECK_DEFAULT"
+SYSINFO="$CHECK_SYSINFO"
+NETINFO="$CHECK_NETINFO"
+CONFIG_FILE="$CHECK_CONFIG_FILE"
 
 # Source required files with error handling
 if [[ -f "$STYLE" ]]; then
