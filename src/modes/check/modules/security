@@ -219,7 +219,8 @@ function security_summary {
         aa_count=$(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l 2>/dev/null || echo "0")
         aa_count=$(echo "$aa_count" | tr -d '[:space:]')
         if [[ -n "$aa_count" ]] && [[ "$aa_count" != "0" ]] && [[ "$aa_count" =~ ^[0-9]+$ ]] && [[ "$aa_count" -gt 0 ]]; then
-        measures=$((measures + 1))
+            measures=$((measures + 1))
+        fi
     else
         warnings=$((warnings + 1))
     fi
