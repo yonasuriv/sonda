@@ -200,12 +200,14 @@ function security_summary {
         nft_count=$(nft list ruleset 2>/dev/null | wc -l 2>/dev/null || echo "0")
         nft_count=$(echo "$nft_count" | tr -d '[:space:]')
         if [[ -n "$nft_count" ]] && [[ "$nft_count" != "0" ]] && [[ "$nft_count" =~ ^[0-9]+$ ]] && [[ "$nft_count" -gt 0 ]]; then
-        measures=$((measures + 1))
+            measures=$((measures + 1))
+        fi
     elif command -v iptables >/dev/null 2>&1; then
         ipt_count=$(iptables -S 2>/dev/null | wc -l 2>/dev/null || echo "0")
         ipt_count=$(echo "$ipt_count" | tr -d '[:space:]')
         if [[ -n "$ipt_count" ]] && [[ "$ipt_count" != "0" ]] && [[ "$ipt_count" =~ ^[0-9]+$ ]] && [[ "$ipt_count" -gt 0 ]]; then
-        measures=$((measures + 1))
+            measures=$((measures + 1))
+        fi
     else
         warnings=$((warnings + 1))
     fi
