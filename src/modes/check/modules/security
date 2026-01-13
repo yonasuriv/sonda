@@ -26,8 +26,10 @@ function security_firewall {
     # Check nftables
     if command -v nft >/dev/null 2>&1; then
         found=1
-        nft_rules=$(nft list ruleset 2>/dev/null | wc -l || echo "0")
-        if [[ "$nft_rules" -gt 0 ]]; then
+        nft_rules=$(nft list ruleset 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        # Remove whitespace from nft_rules
+        nft_rules=$(echo "$nft_rules" | tr -d '[:space:]')
+        if [[ -n "$nft_rules" ]] && [[ "$nft_rules" != "0" ]] && [[ "$nft_rules" =~ ^[0-9]+$ ]] && [[ "$nft_rules" -gt 0 ]]; then
             echo -e "${GREEN2}[+] nftables: Active ($nft_rules rules)${RT}"
         else
             echo -e "${YELLOW2}[!] nftables: No rules found${RT}"
