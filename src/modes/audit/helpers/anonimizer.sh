@@ -3,7 +3,7 @@
 # Reads configuration from default.conf and applies to both console and log output
 
 # Load dependencies (if not already loaded)
-if [[ -z "$AUDIT_DUMMY_IP" ]]; then
+if [[ -z "${AUDIT_DUMMY_IP:-}" ]]; then
     source "${BASH_SOURCE[0]%/*}/config.sh"
 fi
 
