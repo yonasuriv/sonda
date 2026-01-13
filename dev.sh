@@ -189,16 +189,17 @@ install() {
 
 case "${1:-}" in
   deps)     check_deps ;;
-  build)  build ;;
+  rebuild|build)  build ;;
   install)  install ;;
   ""|all)   check_deps; build; install ;;
   *)
-    echo "Usage: $0 [deps|build|install|all]" >&2
+    echo "Usage: $0 [deps|rebuild|build|install|all]" >&2
     echo "" >&2
     echo "Commands:" >&2
     echo "  deps     - Check and install build dependencies" >&2
-    echo "  build  - Clean and build the .deb package" >&2
-    echo "  install  - Install the built .deb package" >&2
+    echo "  rebuild  - Clean and build the .deb package (alias for build)" >&2
+    echo "  build    - Clean and build the .deb package" >&2
+    echo "  install  - Install the built .deb package from dist/ or root" >&2
     echo "  all      - Run deps, build, and install (default)" >&2
     exit 2
     ;;
