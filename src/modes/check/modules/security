@@ -88,8 +88,10 @@ function security_selinux_apparmor {
     
     # Check AppArmor
     if [[ -f /sys/kernel/security/apparmor/profiles ]]; then
-        apparmor_profiles=$(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l || echo "0")
-        if [[ "$apparmor_profiles" -gt 0 ]]; then
+        apparmor_profiles=$(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        # Remove whitespace from apparmor_profiles
+        apparmor_profiles=$(echo "$apparmor_profiles" | tr -d '[:space:]')
+        if [[ -n "$apparmor_profiles" ]] && [[ "$apparmor_profiles" != "0" ]] && [[ "$apparmor_profiles" =~ ^[0-9]+$ ]] && [[ "$apparmor_profiles" -gt 0 ]]; then
             apparmor_status=$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "unknown")
             if [[ "$apparmor_status" == "Y" ]]; then
                 echo -e "${GREEN2}[+] AppArmor: Enabled ($apparmor_profiles profiles)${RT}"
@@ -194,9 +196,15 @@ function security_summary {
         measures=$((measures + 1))
     elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state 2>/dev/null | grep -qi "running"; then
         measures=$((measures + 1))
-    elif command -v nft >/dev/null 2>&1 && [[ $(nft list ruleset 2>/dev/null | wc -l) -gt 0 ]]; then
+    elif command -v nft >/dev/null 2>&1; then
+        nft_count=$(nft list ruleset 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        nft_count=$(echo "$nft_count" | tr -d '[:space:]')
+        if [[ -n "$nft_count" ]] && [[ "$nft_count" != "0" ]] && [[ "$nft_count" =~ ^[0-9]+$ ]] && [[ "$nft_count" -gt 0 ]]; then
         measures=$((measures + 1))
-    elif command -v iptables >/dev/null 2>&1 && [[ $(iptables -S 2>/dev/null | wc -l) -gt 0 ]]; then
+    elif command -v iptables >/dev/null 2>&1; then
+        ipt_count=$(iptables -S 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        ipt_count=$(echo "$ipt_count" | tr -d '[:space:]')
+        if [[ -n "$ipt_count" ]] && [[ "$ipt_count" != "0" ]] && [[ "$ipt_count" =~ ^[0-9]+$ ]] && [[ "$ipt_count" -gt 0 ]]; then
         measures=$((measures + 1))
     else
         warnings=$((warnings + 1))
@@ -205,7 +213,10 @@ function security_summary {
     # Check MAC
     if command -v getenforce >/dev/null 2>&1 && [[ $(getenforce 2>/dev/null) == "Enforcing" ]]; then
         measures=$((measures + 1))
-    elif [[ -f /sys/kernel/security/apparmor/profiles ]] && [[ $(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l) -gt 0 ]]; then
+    elif [[ -f /sys/kernel/security/apparmor/profiles ]]; then
+        aa_count=$(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        aa_count=$(echo "$aa_count" | tr -d '[:space:]')
+        if [[ -n "$aa_count" ]] && [[ "$aa_count" != "0" ]] && [[ "$aa_count" =~ ^[0-9]+$ ]] && [[ "$aa_count" -gt 0 ]]; then
         measures=$((measures + 1))
     else
         warnings=$((warnings + 1))
