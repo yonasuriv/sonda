@@ -2,6 +2,55 @@
 
 All notable changes to Sonda will be documented in this file.
 
+## [1.8.6] - 2026-01-12
+
+### Added
+- **Boot Information Module** (`modules/info/boot`):
+  - Boot time analysis with systemd-analyze
+  - Boot warnings and errors from journalctl
+  - Boot mode detection (UEFI/Legacy BIOS)
+  - Secure Boot status checking
+  - Kernel errors and warnings from dmesg
+- **Security Module** (`modules/info/security`):
+  - Firewall status checking (ufw, nftables, iptables, firewalld)
+  - SELinux/AppArmor status detection
+  - SSH service status and port information
+  - Disk encryption detection (LUKS/dm-crypt)
+  - Security posture summary
+- **Enhanced Network Status**:
+  - VPN/protected/exposed detection in banner
+  - Network status function in lib/logic
+  - Integration with modules/base/banner
+- **CPU Enhancements**:
+  - CPU topology (sockets, cores, threads)
+  - Frequency governor and min/max frequencies
+  - Load averages (1/5/15 min)
+  - Virtualization flags and hypervisor detection
+  - Top CPU consuming processes
+- **Disk Enhancements**:
+  - Per-mount usage table with filesystem types
+  - Encryption status detection (LUKS)
+  - Inode usage monitoring
+  - Filesystem and inode usage warnings
+- **Network Enhancements**:
+  - Network identity (primary IPs, interfaces, link state)
+  - Default gateway and DNS server information
+  - Active connections summary
+- **Test Module Improvements**:
+  - Enhanced boot and services checking
+  - Improved firewall detection
+  - Better error and warning reporting
+
+### Changed
+- Updated `bin/sonda` to source new boot and security modules
+- Added `-T boot` and `-T security` targets
+- Enhanced `-T all` to include boot and security information
+- Improved network status detection in banner
+
+### Documentation
+- Updated help manual with new boot and security targets
+- Enhanced module documentation
+
 ## [1.8.5] - 2026-01-12
 
 ### Changed
