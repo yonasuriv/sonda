@@ -1,5 +1,6 @@
+#!/bin/bash
 
-Usage (Check Mode):
+Usage:
         sonda -C <command>
         sonda -C -T <target> [flags]
         sonda -C --update | --upgrade | --version | -h | --help

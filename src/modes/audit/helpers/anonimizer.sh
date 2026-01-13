@@ -12,7 +12,7 @@ fi
 # to avoid expensive operations (hostname, whoami, curl, dig) when not needed
 _init_anonymization() {
     # Only initialize if not already done
-    if [[ -n "$_ANON_INITIALIZED" ]]; then
+    if [[ -n "${_ANON_INITIALIZED:-}" ]]; then
         return 0
     fi
     
@@ -135,7 +135,7 @@ anonymize_log_files() {
     fi
     
     # Initialize anonymization values if needed
-    if [[ -z "$_ANON_INITIALIZED" ]]; then
+    if [[ -z "${_ANON_INITIALIZED:-}" ]]; then
         _init_anonymization
     fi
     

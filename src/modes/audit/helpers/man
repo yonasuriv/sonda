@@ -1,0 +1,23 @@
+#!/bin/bash
+
+Usage:
+        sonda audit <command>
+        sonda audit <component> [flags]
+        sonda --update | --upgrade | --version | -h | --help
+
+Options:
+        -v, --verbose         Show detailed information on terminal (default: silent)
+        -s, --silent          Hide detailed info from terminal, not logs (default)
+        
+        -u, --user            Add username to log filenames
+        -a, --no-user         Hide username from log filenames (default)
+
+        -t, --timestamp       Add timestamp to log filenames
+        -nt, --no-timestamp   Remove timestamp from log filenames (default)
+
+        -h,--help             Show this help message and exit
+
+        --save-logs, --log    Save detailed logs to ./logs directory
+        --log-dir, -d DIR     Specify custom log directory (default: ./logs)
+
+Default behavior: -s -nt -a (silent output, no timestamp, no user)
