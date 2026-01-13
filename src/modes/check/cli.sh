@@ -9,11 +9,11 @@
 # Check mode specific paths
 set -a
 
-# FOLDERS (check mode specific)
-LIB="$INSTALLDIR/modes/check/lib"
-SHARED_CORE="$INSTALLDIR/lib/core"
-MODULES="$INSTALLDIR/modes/check/modules"
-CONFIG="$INSTALLDIR/modes/check/default.conf"
+# FOLDERS (check mode specific - use exported paths from main script)
+LIB="$CHECK_MODE_DIR/lib"
+SHARED_CORE="$SHARED_CORE_DIR"
+MODULES="$CHECK_MODE_DIR/modules"
+CONFIG="$CHECK_MODE_DIR/default.conf"
 
 # FILES
 STYLE="$SHARED_CORE/style"

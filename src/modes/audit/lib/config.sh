@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Configuration and default values
+
+# Load paths first (if not already loaded)
+if [[ -z "$AUDIT_PROJECT_ROOT" ]]; then
+    source "${BASH_SOURCE[0]%/*}/paths.sh"
+fi
+
+# Default configuration values (can be overridden by default.conf or command line)
+# All defaults should come from default.conf, these are fallbacks only
+
+# Logging settings
+AUDIT_SAVE_LOGS=${AUDIT_SAVE_LOGS:-false}
+AUDIT_LOG_DIR=${AUDIT_LOG_DIR:-./logs}
+AUDIT_LOG_SKIP_PHASES=${AUDIT_LOG_SKIP_PHASES:-""}
+AUDIT_LOG_MIN_LEVEL=${AUDIT_LOG_MIN_LEVEL:-"pass"}  # pass, warn, fail
+AUDIT_LOG_MAX_FINDINGS=${AUDIT_LOG_MAX_FINDINGS:-0}  # 0 = no limit
+AUDIT_LOG_TIMESTAMP=${AUDIT_LOG_TIMESTAMP:-true}
+AUDIT_LOG_USER=${AUDIT_LOG_USER:-false}
+AUDIT_LOG_ANONYMIZE=${AUDIT_LOG_ANONYMIZE:-false}
+AUDIT_LOG_ANONYMIZE_AFTER_WRITE=${AUDIT_LOG_ANONYMIZE_AFTER_WRITE:-true}
+
+# Anonymization settings (what to anonymize)
+AUDIT_ANONYMIZE_IP=${AUDIT_ANONYMIZE_IP:-false}
+AUDIT_ANONYMIZE_HOST=${AUDIT_ANONYMIZE_HOST:-false}
+AUDIT_ANONYMIZE_USER=${AUDIT_ANONYMIZE_USER:-false}
+AUDIT_DUMMY_IP=${AUDIT_DUMMY_IP:-"153.242.117.210"}
+AUDIT_DUMMY_HOST=${AUDIT_DUMMY_HOST:-"lizard.local"}
+AUDIT_DUMMY_USER=${AUDIT_DUMMY_USER:-"lizard"}
+
+# Console output settings
+AUDIT_VERBOSE=${AUDIT_VERBOSE:-false}  # Default: silent (-s)
+AUDIT_CONSOLE_SKIP_PHASES=${AUDIT_CONSOLE_SKIP_PHASES:-""}
+AUDIT_CONSOLE_MIN_LEVEL=${AUDIT_CONSOLE_MIN_LEVEL:-"warn"}  # pass, warn, fail
+AUDIT_CONSOLE_MAX_FINDINGS=${AUDIT_CONSOLE_MAX_FINDINGS:-20}  # 0 = no limit
+AUDIT_CONSOLE_TIMESTAMP=${AUDIT_CONSOLE_TIMESTAMP:-false}
+AUDIT_CONSOLE_USER=${AUDIT_CONSOLE_USER:-false}
+AUDIT_CONSOLE_ANONYMIZE=${AUDIT_CONSOLE_ANONYMIZE:-false}
+
+# Disable console anonymization if silent mode is enabled (no console output to anonymize)
+# Note: Failures and skips still show in silent mode, but anonymization is disabled for consistency
+if [[ "$AUDIT_VERBOSE" == false ]]; then
+    AUDIT_CONSOLE_ANONYMIZE=false
+fi
+
+# Legacy compatibility (map old flags to new settings if not set)
+AUDIT_ADD_TIMESTAMP=${AUDIT_ADD_TIMESTAMP:-$AUDIT_LOG_TIMESTAMP}
+AUDIT_ADD_USER=${AUDIT_ADD_USER:-$AUDIT_LOG_USER}
+
+# Timestamp for log files
+AUDIT_TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+# Test counters (initialized here, updated by functions)
+AUDIT_PASSED=0
+AUDIT_FAILED=0
+AUDIT_WARNINGS=0
+AUDIT_SKIPPED=0
+AUDIT_PHASE_COUNT=0
+
+# Phase-level tracking (phase_id -> status)
+declare -A AUDIT_PHASE_STATUS
+declare -A AUDIT_PHASE_FAILED
+declare -A AUDIT_PHASE_WARNINGS
+declare -A AUDIT_PHASE_PASSED
+declare -A AUDIT_PHASE_SKIPPED
+
+# Boot information
+AUDIT_BOOT_ID=""
+AUDIT_BOOT_TO_GUI=""
+AUDIT_BOOT_TOTAL_TIME=""
+AUDIT_BOOT_FIRMWARE_TIME=""
+AUDIT_BOOT_LOADER_TIME=""
+AUDIT_BOOT_KERNEL_TIME=""
+AUDIT_BOOT_USERSPACE_TIME=""
+
+# Log file paths (will be set when logging is initialized)
+AUDIT_LOG_FILE=""
+AUDIT_DETAILED_LOG=""
+
+# Export for use in other modules
+export AUDIT_SAVE_LOGS AUDIT_LOG_DIR AUDIT_VERBOSE
+export AUDIT_LOG_SKIP_PHASES AUDIT_LOG_MIN_LEVEL AUDIT_LOG_MAX_FINDINGS
+export AUDIT_LOG_TIMESTAMP AUDIT_LOG_USER AUDIT_LOG_ANONYMIZE AUDIT_LOG_ANONYMIZE_AFTER_WRITE
+export AUDIT_CONSOLE_SKIP_PHASES AUDIT_CONSOLE_MIN_LEVEL AUDIT_CONSOLE_MAX_FINDINGS
+export AUDIT_CONSOLE_TIMESTAMP AUDIT_CONSOLE_USER AUDIT_CONSOLE_ANONYMIZE
+export AUDIT_ADD_TIMESTAMP AUDIT_ADD_USER  # Legacy compatibility
+export AUDIT_TIMESTAMP AUDIT_PASSED AUDIT_FAILED AUDIT_WARNINGS AUDIT_SKIPPED AUDIT_PHASE_COUNT
+export AUDIT_LOG_FILE AUDIT_DETAILED_LOG
+export AUDIT_BOOT_ID AUDIT_BOOT_TO_GUI AUDIT_BOOT_TOTAL_TIME
+export AUDIT_BOOT_FIRMWARE_TIME AUDIT_BOOT_LOADER_TIME AUDIT_BOOT_KERNEL_TIME AUDIT_BOOT_USERSPACE_TIME

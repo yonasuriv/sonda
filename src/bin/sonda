@@ -70,6 +70,17 @@ fi
 # ASSETS (shared across modes)
 export ASSETS="$INSTALLDIR/assets"
 
+# MODE PATHS (defined once, reused)
+export MODES_DIR="$INSTALLDIR/modes"
+export CHECK_MODE_DIR="$MODES_DIR/check"
+export AUDIT_MODE_DIR="$MODES_DIR/audit"
+export SHARED_LIB_DIR="$INSTALLDIR/lib"
+export SHARED_CORE_DIR="$SHARED_LIB_DIR/core"
+
+# Mode script paths
+export CHECK_CLI="$CHECK_MODE_DIR/cli.sh"
+export AUDIT_CLI="$AUDIT_MODE_DIR/cli.sh"
+
 # Log initialization
 log_info "Sonda started with arguments: $*"
 
@@ -85,33 +96,35 @@ MODE="${1:-check}"
 
 # Route to appropriate mode script
 # Use source instead of exec to preserve functions and variables
+# Shift mode argument so it's not passed to the mode script
 case "$MODE" in
     check|"")
-        # Default mode: check
-        if [[ -f "$INSTALLDIR/modes/check/cli.sh" ]]; then
-            source "$INSTALLDIR/modes/check/cli.sh" "$@"
+        # Default mode: check - pass all arguments (including empty)
+        if [[ -f "$CHECK_CLI" ]]; then
+            source "$CHECK_CLI" "$@"
             exit $?
         else
-            echo "Error: Check mode script not found: $INSTALLDIR/modes/check/cli.sh" >&2
+            echo "Error: Check mode script not found: $CHECK_CLI" >&2
             log_error "Check mode script not found"
             exit 1
         fi
         ;;
     audit)
-        # Audit mode (future)
-        if [[ -f "$INSTALLDIR/modes/audit/cli.sh" ]]; then
-            source "$INSTALLDIR/modes/audit/cli.sh" "$@"
+        # Audit mode - shift "audit" argument before passing to script
+        shift
+        if [[ -f "$AUDIT_CLI" ]]; then
+            source "$AUDIT_CLI" "$@"
             exit $?
         else
-            echo "Error: Audit mode not yet implemented" >&2
-            log_error "Audit mode not implemented"
+            echo "Error: Audit mode script not found: $AUDIT_CLI" >&2
+            log_error "Audit mode script not found"
             exit 1
         fi
         ;;
     *)
         # Unknown mode, try check mode with all arguments
-        if [[ -f "$INSTALLDIR/modes/check/cli.sh" ]]; then
-            source "$INSTALLDIR/modes/check/cli.sh" "$@"
+        if [[ -f "$CHECK_CLI" ]]; then
+            source "$CHECK_CLI" "$@"
             exit $?
         else
             echo "Error: Unknown mode and check mode not available" >&2
