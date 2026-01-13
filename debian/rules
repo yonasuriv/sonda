@@ -103,6 +103,7 @@ override_dh_auto_install:
 	cp src/bin/sonda debian/sonda/usr/bin/
 	chmod +x debian/sonda/usr/bin/sonda
 	chmod +x debian/sonda/usr/share/sonda/modes/check/cli.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/audit/cli.sh
 	# Install desktop file
 	mkdir -p debian/sonda/usr/share/applications
 	cp assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
