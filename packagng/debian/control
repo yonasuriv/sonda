@@ -29,17 +29,7 @@ Depends: ${misc:Depends},
          libglib2.0-bin
 Recommends: python3-pip,
             lolcat
-
 Description: System and Network Information Tool
  Sonda is a comprehensive system information utility for Linux that provides
  real-time monitoring and detailed system/network information in a clean,
  terminal-based interface.
-  
- Features:
-  - System information (CPU, RAM, storage, hardware specs)
-  - Network details (interfaces, IPs, connections, firewall status)
-  - Package management monitoring
-  - Real-time system health monitoring
-  - Process viewer
-  - Clean, readable terminal interface
-  - Modular, extensible architecture
