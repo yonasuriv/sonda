@@ -1,0 +1,233 @@
+#!/bin/bash
+
+# Security Information Module
+# Checks firewall, SELinux/AppArmor, SSH, disk encryption, and other security baselines
+
+function security_firewall {
+    echo -e "${LB}${CYAN}[#] Firewall Status${RT}${LB}"
+    
+    local found=0
+    
+    # Check UFW
+    if command -v ufw >/dev/null 2>&1; then
+        found=1
+        ufw_status=$(ufw status 2>/dev/null | head -n 1 || echo "unknown")
+        if echo "$ufw_status" | grep -qi "active"; then
+            echo -e "${GREEN2}[+] UFW: ${ufw_status}${RT}"
+        else
+            echo -e "${YELLOW2}[!] UFW: ${ufw_status}${RT}"
+        fi
+        if [[ -n "${VLEVEL:-}" ]] && [[ "$VLEVEL" == "-v" ]] || [[ "$VLEVEL" == "-vv" ]]; then
+            echo -e "${WHITE2}UFW Rules:${RT}"
+            pprint "ufw status verbose 2>/dev/null | head -n 30"
+        fi
+    fi
+    
+    # Check nftables
+    if command -v nft >/dev/null 2>&1; then
+        found=1
+        nft_rules=$(nft list ruleset 2>/dev/null | wc -l || echo "0")
+        if [[ "$nft_rules" -gt 0 ]]; then
+            echo -e "${GREEN2}[+] nftables: Active ($nft_rules rules)${RT}"
+        else
+            echo -e "${YELLOW2}[!] nftables: No rules found${RT}"
+        fi
+    fi
+    
+    # Check iptables
+    if command -v iptables >/dev/null 2>&1; then
+        found=1
+        iptables_rules=$(iptables -S 2>/dev/null | wc -l || echo "0")
+        if [[ "$iptables_rules" -gt 0 ]]; then
+            echo -e "${GREEN2}[+] iptables: Active ($iptables_rules rules)${RT}"
+        else
+            echo -e "${YELLOW2}[!] iptables: No rules found${RT}"
+        fi
+    fi
+    
+    # Check firewalld
+    if command -v firewall-cmd >/dev/null 2>&1; then
+        found=1
+        if firewall-cmd --state 2>/dev/null | grep -qi "running"; then
+            echo -e "${GREEN2}[+] firewalld: Running${RT}"
+        else
+            echo -e "${YELLOW2}[!] firewalld: Not running${RT}"
+        fi
+    fi
+    
+    if [[ "$found" -eq 0 ]]; then
+        echo -e "${RED2}[!] No firewall tooling found (ufw/nft/iptables/firewalld)${RT}"
+    fi
+}
+
+function security_selinux_apparmor {
+    echo -e "${LB}${CYAN}[#] Mandatory Access Control (MAC)${RT}${LB}"
+    
+    # Check SELinux
+    if command -v getenforce >/dev/null 2>&1; then
+        selinux_status=$(getenforce 2>/dev/null || echo "disabled")
+        case "$selinux_status" in
+            Enforcing)
+                echo -e "${GREEN2}[+] SELinux: Enforcing${RT}"
+                ;;
+            Permissive)
+                echo -e "${YELLOW2}[!] SELinux: Permissive${RT}"
+                ;;
+            Disabled|disabled)
+                echo -e "${RED2}[!] SELinux: Disabled${RT}"
+                ;;
+            *)
+                echo -e "${YELLOW2}[!] SELinux: $selinux_status${RT}"
+                ;;
+        esac
+    fi
+    
+    # Check AppArmor
+    if [[ -f /sys/kernel/security/apparmor/profiles ]]; then
+        apparmor_profiles=$(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l || echo "0")
+        if [[ "$apparmor_profiles" -gt 0 ]]; then
+            apparmor_status=$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "unknown")
+            if [[ "$apparmor_status" == "Y" ]]; then
+                echo -e "${GREEN2}[+] AppArmor: Enabled ($apparmor_profiles profiles)${RT}"
+            else
+                echo -e "${YELLOW2}[!] AppArmor: Profiles found but status unknown${RT}"
+            fi
+        else
+            echo -e "${RED2}[!] AppArmor: No profiles found${RT}"
+        fi
+    elif command -v aa-status >/dev/null 2>&1; then
+        aa_output=$(aa-status 2>/dev/null | head -n 1 || echo "")
+        if [[ -n "$aa_output" ]]; then
+            echo -e "${GREEN2}[+] AppArmor: Active${RT}"
+        else
+            echo -e "${RED2}[!] AppArmor: Not active${RT}"
+        fi
+    fi
+}
+
+function security_ssh {
+    echo -e "${LB}${CYAN}[#] SSH Service Status${RT}${LB}"
+    
+    if command -v systemctl >/dev/null 2>&1; then
+        ssh_status=$(systemctl is-active ssh 2>/dev/null || systemctl is-active sshd 2>/dev/null || echo "inactive")
+        ssh_enabled=$(systemctl is-enabled ssh 2>/dev/null || systemctl is-enabled sshd 2>/dev/null || echo "disabled")
+        
+        if [[ "$ssh_status" == "active" ]]; then
+            echo -e "${GREEN2}[+] SSH: Running${RT}"
+            
+            # Get SSH port
+            ssh_port=$(ss -lntp 2>/dev/null | grep sshd | awk '{print $4}' | cut -d':' -f2 | head -n 1 || echo "22")
+            echo -e "${WHITE2}SSH Port:${RT} $ssh_port"
+            
+            # Check if listening on all interfaces (0.0.0.0) or localhost only
+            ssh_listen=$(ss -lntp 2>/dev/null | grep sshd | awk '{print $4}' | head -n 1 || echo "")
+            if [[ "$ssh_listen" == *"0.0.0.0"* ]] || [[ "$ssh_listen" == *"::"* ]]; then
+                echo -e "${YELLOW2}[!] SSH: Listening on all interfaces${RT}"
+            else
+                echo -e "${GREEN2}[+] SSH: Listening on specific interface${RT}"
+            fi
+        else
+            echo -e "${YELLOW2}[!] SSH: Not running${RT}"
+        fi
+        
+        if [[ "$ssh_enabled" == "enabled" ]]; then
+            echo -e "${WHITE2}SSH Enabled at boot:${RT} Yes"
+        else
+            echo -e "${WHITE2}SSH Enabled at boot:${RT} No"
+        fi
+    else
+        echo -e "${YELLOW2}[!] systemctl not available${RT}"
+    fi
+}
+
+function security_disk_encryption {
+    echo -e "${LB}${CYAN}[#] Disk Encryption Status${RT}${LB}"
+    
+    local encrypted_found=0
+    
+    # Check for LUKS encrypted devices
+    if command -v lsblk >/dev/null 2>&1; then
+        luks_devices=$(lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINT 2>/dev/null | grep -i "crypt\|luks" || echo "")
+        if [[ -n "$luks_devices" ]]; then
+            encrypted_found=1
+            echo -e "${GREEN2}[+] LUKS Encrypted Devices Found:${RT}"
+            echo "$luks_devices" | while read -r line; do
+                echo -e "  ${WHITE2}$line${RT}"
+            done
+        fi
+    fi
+    
+    # Check for dm-crypt devices
+    if [[ -d /sys/block ]]; then
+        for device in /sys/block/dm-*; do
+            if [[ -e "$device/dm/name" ]]; then
+                dm_name=$(cat "$device/dm/name" 2>/dev/null || echo "")
+                if [[ -n "$dm_name" ]]; then
+                    encrypted_found=1
+                    if [[ "$encrypted_found" -eq 1 ]] && [[ -z "$luks_devices" ]]; then
+                        echo -e "${GREEN2}[+] dm-crypt Device Found:${RT}"
+                    fi
+                    echo -e "  ${WHITE2}$dm_name${RT}"
+                fi
+            fi
+        done
+    fi
+    
+    if [[ "$encrypted_found" -eq 0 ]]; then
+        echo -e "${YELLOW2}[!] No disk encryption detected${RT}"
+    fi
+}
+
+function security_summary {
+    echo -e "${LB}${CYAN}[#] Security Summary${RT}${LB}"
+    
+    # Count security measures
+    local measures=0
+    local warnings=0
+    
+    # Check firewall
+    if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -qi "active"; then
+        measures=$((measures + 1))
+    elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state 2>/dev/null | grep -qi "running"; then
+        measures=$((measures + 1))
+    elif command -v nft >/dev/null 2>&1 && [[ $(nft list ruleset 2>/dev/null | wc -l) -gt 0 ]]; then
+        measures=$((measures + 1))
+    elif command -v iptables >/dev/null 2>&1 && [[ $(iptables -S 2>/dev/null | wc -l) -gt 0 ]]; then
+        measures=$((measures + 1))
+    else
+        warnings=$((warnings + 1))
+    fi
+    
+    # Check MAC
+    if command -v getenforce >/dev/null 2>&1 && [[ $(getenforce 2>/dev/null) == "Enforcing" ]]; then
+        measures=$((measures + 1))
+    elif [[ -f /sys/kernel/security/apparmor/profiles ]] && [[ $(cat /sys/kernel/security/apparmor/profiles 2>/dev/null | wc -l) -gt 0 ]]; then
+        measures=$((measures + 1))
+    else
+        warnings=$((warnings + 1))
+    fi
+    
+    echo -e "${WHITE2}Active Security Measures:${RT} $measures"
+    echo -e "${WHITE2}Warnings:${RT} $warnings"
+    
+    if [[ "$measures" -ge 2 ]]; then
+        echo -e "${GREEN2}[+] Security Posture: Good${RT}"
+    elif [[ "$measures" -eq 1 ]]; then
+        echo -e "${YELLOW2}[!] Security Posture: Fair${RT}"
+    else
+        echo -e "${RED2}[!] Security Posture: Poor${RT}"
+    fi
+}
+
+# Main function - displays all security information
+function security_all {
+    security_firewall
+    echo ""
+    security_selinux_apparmor
+    echo ""
+    security_ssh
+    echo ""
+    security_disk_encryption
+    echo ""
+    security_summary
+}
