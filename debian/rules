@@ -40,21 +40,11 @@ collect:
 	@echo ""
 	@echo "Collecting build artifacts..."
 	@mkdir -p $(DIST_DIR)
-	@if [ -f ../$(PACKAGE_NAME) ]; then \
-		cp -a ../$(PACKAGE_NAME) $(DIST_DIR)/; \
-	fi
-	@if [ -f ../sonda_$(DEB_VERSION)_*.buildinfo ]; then \
-		cp -a ../sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; \
-	fi
-	@if [ -f ../sonda_$(DEB_VERSION)_*.changes ]; then \
-		cp -a ../sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; \
-	fi
-	@if [ -f ../sonda_$(DEB_VERSION).dsc ]; then \
-		cp -a ../sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; \
-	fi
-	@if [ -f ../sonda_$(DEB_VERSION).tar.* ]; then \
-		cp -a ../sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; \
-	fi
+	@bash -c 'if [ -f ../$(PACKAGE_NAME) ]; then cp -a ../$(PACKAGE_NAME) $(DIST_DIR)/; fi'
+	@bash -c 'if [ -f ../sonda_$(DEB_VERSION)_*.buildinfo ]; then cp -a ../sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if [ -f ../sonda_$(DEB_VERSION)_*.changes ]; then cp -a ../sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if [ -f ../sonda_$(DEB_VERSION).dsc ]; then cp -a ../sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'if [ -f ../sonda_$(DEB_VERSION).tar.* ]; then cp -a ../sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; fi'
 	@echo "Collected artifacts in $(DIST_DIR)"
 	@echo ""
 
@@ -70,25 +60,12 @@ build: clean
 
 package: build
 	@echo "Package: $(PACKAGE_NAME)"
-	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
-		ls -lh $(DIST_DIR)/$(PACKAGE_NAME); \
-	elif [ -f ../$(PACKAGE_NAME) ]; then \
-		ls -lh ../$(PACKAGE_NAME); \
-	else \
-		echo "Package not found"; \
-	fi
+	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then ls -lh ../$(PACKAGE_NAME); else echo "Package not found"; fi'
 
 install: package
 	@echo ""
 	@echo "Installing package..."
-	@if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then \
-		sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); \
-	elif [ -f ../$(PACKAGE_NAME) ]; then \
-		sudo dpkg -i ../$(PACKAGE_NAME); \
-	else \
-		echo "Error: Package $(PACKAGE_NAME) not found"; \
-		exit 1; \
-	fi
+	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then sudo dpkg -i ../$(PACKAGE_NAME); else echo "Error: Package $(PACKAGE_NAME) not found"; exit 1; fi'
 	@echo "Installation complete!"
 	@echo ""
 
