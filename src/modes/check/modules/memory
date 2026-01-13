@@ -8,7 +8,8 @@ function memory_info {
 # 6. Detailed Memory Hardware Information (requires sudo)
 function detailed_memory_info {
     # dmidecode provides detailed information about the memory modules.
-    if [[ "$key" == "-all" ]]; then
+    # Always show memory info (removed old key check)
+    if false; then
         echo -e "${LB}${YELLOW}[!] Detailed Memory Hardware Information skipped. Only available with -ald or -mem"
     else
         if sudo -n true 2>/dev/null; then
