@@ -13,7 +13,14 @@ source "${BASH_SOURCE[0]%/*}/phases.sh"
 source "${BASH_SOURCE[0]%/*}/filter.sh"
 source "${BASH_SOURCE[0]%/*}/functions.sh"
 source "${BASH_SOURCE[0]%/*}/layout.sh"
-source "${BASH_SOURCE[0]%/*}/sudo.sh"
+# Source sudo.sh - check common location first, then local
+if [[ -f "${BASH_SOURCE[0]%/*}/sudo.sh" ]]; then
+    source "${BASH_SOURCE[0]%/*}/sudo.sh"
+elif [[ -n "${SHARED_LIB_DIR:-}" ]] && [[ -f "$SHARED_LIB_DIR/common/sudo.sh" ]]; then
+    source "$SHARED_LIB_DIR/common/sudo.sh"
+elif [[ -n "${INSTALLDIR:-}" ]] && [[ -f "$INSTALLDIR/lib/common/sudo.sh" ]]; then
+    source "$INSTALLDIR/lib/common/sudo.sh"
+fi
 source "${BASH_SOURCE[0]%/*}/summary.sh"
 
 # Initialize logging if requested
