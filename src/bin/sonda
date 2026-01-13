@@ -16,19 +16,19 @@ else
 fi
 
 # Determine installation directory
-# Priority: 1. Environment variable, 2. System-wide (/usr/share/sonda), 3. Source directory, 4. User local
+# Priority: 1. Environment variable, 2. Source directory, 3. System-wide (/usr/share/sonda), 4. User local
 if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
     INSTALLDIR="$SONDA_INSTALL_DIR"
-elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/modes/check/lib/style" ]]; then
-    # System-wide installation (Debian package)
-    INSTALLDIR="/usr/share/sonda"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../modes/check/lib/style" ]] || [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/core/style" ]]; then
-    # Running from source directory
+elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/core/sonda.conf" ]]; then
+    # Running from source directory (check this first to avoid false matches)
     INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     # VERSION file is at project root, not in src/
     if [[ -f "$(dirname "$INSTALLDIR")/VERSION" ]]; then
         export VERSION_FILE="$(cd "$(dirname "$INSTALLDIR")" && pwd)/VERSION"
     fi
+elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/lib/core/sonda.conf" ]]; then
+    # System-wide installation (Debian package)
+    INSTALLDIR="/usr/share/sonda"
 else
     # Fallback to user local (legacy)
     INSTALLDIR="$HOMEUSER/.local/share/sonda"
@@ -40,13 +40,8 @@ log_warn() { echo "[WARN] $*" >&2; }
 log_info() { :; }
 log_debug() { :; }
 
-# Try to source actual logger if available
-if [[ -f "$INSTALLDIR/modes/check/lib/logger" ]]; then
-    source "$INSTALLDIR/modes/check/lib/logger" 2>/dev/null || true
-elif [[ -f "$INSTALLDIR/check/lib/logger" ]]; then
-    # Fallback for old structure
-    source "$INSTALLDIR/check/lib/logger" 2>/dev/null || true
-fi
+# Try to source actual logger if available (will use config variables after sonda.conf loads)
+# For now, just set up fallback functions - actual logger will be sourced by mode scripts
 
 # Check if installation directory exists
 if [[ ! -d "$INSTALLDIR" ]]; then
@@ -64,7 +59,7 @@ export HOMEUSER
 
 # Version file is now in root directory (set above if from source, otherwise here)
 if [[ -z "${VERSION_FILE:-}" ]]; then
-    export VERSION_FILE="$INSTALLDIR/version"
+    export VERSION_FILE="$INSTALLDIR/VERSION"
 fi
 
 # ASSETS (shared across modes)
@@ -77,10 +72,12 @@ export AUDIT_MODE_DIR="$MODES_DIR/audit"
 export SHARED_LIB_DIR="$INSTALLDIR/lib"
 export SHARED_CORE_DIR="$SHARED_LIB_DIR/core"
 
-# Source master configuration file
+# Source master configuration file and load config
 SONDA_CONF="$SHARED_CORE_DIR/sonda.conf"
 if [[ -f "$SONDA_CONF" ]]; then
     source "$SONDA_CONF" 2>/dev/null || log_warn "Failed to source sonda.conf"
+    # Call the function to load and export all config variables
+    load_sonda_config
 else
     log_error "Master configuration file not found: $SONDA_CONF"
     exit 1

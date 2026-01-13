@@ -4,7 +4,9 @@
 # Load a phase module
 load_phase_module() {
     local phase_num="$1"
-    local phase_file="$AUDIT_MODULES_DIR/${phase_num}_*.sh"
+    # Use AUDIT_MODULES from sonda.conf (preferred) or AUDIT_MODULES_DIR from paths.sh (fallback)
+    local modules_dir="${AUDIT_MODULES:-$AUDIT_MODULES_DIR}"
+    local phase_file="$modules_dir/${phase_num}_*.sh"
     
     # Find the module file
     local module_file=""

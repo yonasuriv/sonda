@@ -140,10 +140,15 @@ if [[ "$SUDO_NEEDED" == true ]]; then
 fi
 
 # Load and execute all phase modules
-# AUDIT_LIB_DIR is set by paths.sh (loaded via init.sh)
-# AUDIT_CORE_DIR is an alias for AUDIT_LIB_DIR (backward compatibility)
-# shellcheck disable=SC1091,SC2153  # Dynamic source path; AUDIT_LIB_DIR is set by init.sh via paths.sh
-source "$AUDIT_LIB_DIR/loader.sh"
+# Use AUDIT_LIB from sonda.conf (preferred) or AUDIT_LIB_DIR from paths.sh (fallback)
+AUDIT_LOADER="${AUDIT_LIB:-$AUDIT_LIB_DIR}/loader.sh"
+# shellcheck disable=SC1091,SC2153  # Dynamic source path
+if [[ -f "$AUDIT_LOADER" ]]; then
+    source "$AUDIT_LOADER"
+else
+    echo "Error: Cannot find loader.sh at $AUDIT_LOADER" >&2
+    exit 1
+fi
 
 # Run all phases
 load_all_phases
