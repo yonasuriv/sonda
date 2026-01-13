@@ -1,0 +1,590 @@
+#!/usr/bin/bash
+
+
+set -euo pipefail
+
+# -----------------------
+# Variables
+# -----------------------
+
+PREFIX="****"
+REPORT_DIR=""
+
+# -----------------------
+# Colors + log helpers
+# -----------------------
+_color_init() {
+  if [[ -t 2 ]] && command -v tput >/dev/null 2>&1 && [[ "${NO_COLOR:-}" != "1" ]]; then
+    C_RED="$(tput setaf 1)"
+    C_GRN="$(tput setaf 2)"
+    C_YEL="$(tput setaf 3)"
+    C_CYN="$(tput setaf 6)"
+    C_PUR="$(tput setaf 5)"
+    C_RST="$(tput sgr0)"
+  else
+    C_RED=""; C_GRN=""; C_YEL=""; C_CYN=""; C_RST=""
+  fi
+}
+_color_init
+
+tag() {
+  # usage: tag LEVEL COLOR "message"
+  local level="$1" color="$2"; shift 2
+  printf '%s[%s]%s %s\n' "$color" "$level" "$C_RST" "$*"
+}
+
+tag_block() {
+  # usage: tag_block LEVEL COLOR "message"
+  local level="$1" color="$2"; shift 2
+  printf '\n%s[%s]%s %s\n\n' "$color" "$level" "$C_RST" "$*"
+}
+
+header() { printf '\n' && tag "*"  "$C_PUR" "$*" && printf '\n'; }
+
+success() { tag "S"  "$C_GRN" "$*"; }       # one-liner
+info()    { tag "I"  "$C_CYN" "$*"; }       # one-liner
+warn()    { tag "W"  "$C_YEL" "$*" >&2; }   # one-liner
+error()   { tag "E" "$C_RED" "$*" >&2; }
+die()     { tag "E" "$C_RED" "$*" >&2; exit 2; }
+
+# Use these when you want spacing:
+info_block() { tag_block "INFO" "$C_CYN" "$*"; }
+warn_block() { tag_block "WARN" "$C_YEL" "$*" >&2; }
+error_block()   { tag_block "ERROR" "$C_RED" "$*" >&2; }
+die_block()     { tag_block "ERROR" "$C_RED" "$*" >&2; exit 2; }
+
+prefix_stream() { sed "s/^/${PREFIX} /"; }
+
+cmd() { "$@" 2>&1 | prefix_stream; }
+
+# -----------------------
+# Sudo req
+# -----------------------
+
+[[ "${EUID:-$(id -u)}" -eq 0 ]] || { printf '\n' && error "This script must be run as root." && printf '\n'; exit 2; }
+
+# -----------------------
+# Args
+# -----------------------
+ACTION="${1:-}"
+OUTDIR="${2:-}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  sudo distro-healthcheck.sh --check
+  sudo distro-healthcheck.sh --report /path/to/output_dir
+
+--check  : prints a summary to stdout
+--report : writes full evidence to output dir and prints a summary; creates output_dir.tar.gz
+
+Notes:
+- Safe read-only checks. No repairs.
+- If you run GNOME on Wayland, GNOME extension checks still work but "gnome-shell --replace" style debugging is not used.
+EOF
+}
+
+if [[ "$ACTION" == "--report" ]]; then
+  if [[ -z "$OUTDIR" ]]; then
+    BASE="${HOME}/.logs"
+    OUTDIR="${BASE}/$(date +%d-%m-%Y)"
+    info "No output directory path specified, defaulting to $OUTDIR"
+  fi
+
+  mkdir -p "$OUTDIR"
+  : >"$OUTDIR/.write_test" && rm -f "$OUTDIR/.write_test" || die "OUTDIR not writable: $OUTDIR"
+fi
+
+# -----------------------
+# Utilities
+# -----------------------
+have() { command -v "$1" >/dev/null 2>&1; }
+
+mkdirp() { install -d -m 0755 "$1"; }
+
+run_to_file() {
+  local f="$1"; shift
+  local title="$1"; shift
+  {
+    echo -e "### $title"
+    echo -e "cmd: $*"
+    echo -e "time: $(date -Is)"
+    echo
+    "$@" 2>&1 || true
+    echo
+  } >"$f"
+}
+
+tail_journal() {
+  local since="$1"
+  cmd journalctl -b --no-pager -o short-precise --since "$since" 2>/dev/null || true
+}
+
+# status buckets
+WARNINGS=0
+ERRORS=0
+
+bump_warn() { WARNINGS=$((WARNINGS+1)); }
+bump_err()  { ERRORS=$((ERRORS+1)); }
+
+# output sink
+REPORT=0
+if [[ "$ACTION" == "--report" ]]; then
+  REPORT=1
+  mkdirp "$OUTDIR"
+  mkdirp "$OUTDIR/sections"
+  mkdirp "$OUTDIR/raw"
+fi
+
+emit() {
+  # emit summary lines to console always, and to summary file when reporting
+  local line="$1"
+  echo -e "$line"
+  if [[ "$REPORT" -eq 1 ]]; then
+    echo -e "$line" >> "$OUTDIR/summary.txt"
+  fi
+}
+
+# -----------------------
+# Section: System basics
+# -----------------------
+sys_basics() {
+  header "Collecting system basics"
+  local hn os kern up
+  hn="$(hostnamectl --static 2>/dev/null || hostname)"
+  os="$(. /etc/os-release 2>/dev/null; echo -e "${PRETTY_NAME:-unknown}")"
+  kern="$(uname -r)"
+  up="$(uptime -p 2>/dev/null || true)"
+  emit "Host: $hn"
+  emit "OS:   $os"
+  emit "Kernel: $kern"
+  [[ -n "$up" ]] && emit "Uptime: $up"
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/00-host.txt" "Host info" bash -lc 'hostnamectl; echo; uname -a; echo; cat /etc/os-release; echo; uptime; echo; who -b'
+  fi
+}
+
+# -----------------------
+# Section: Boot, systemd, services
+# -----------------------
+boot_and_services() {
+  header "Checking boot performance and failed units"
+  if have systemd-analyze; then
+    local t
+    t="$(systemd-analyze time 2>/dev/null | tr -d '\r' || true)"
+    [[ -n "$t" ]] && emit "Boot time: $t"
+    
+    # Check critical chain for slow services
+    local critical_chain
+    critical_chain="$(systemd-analyze critical-chain 2>/dev/null | head -n 10 || true)"
+    if [[ -n "$critical_chain" ]]; then
+      emit "Critical chain (top slow services):"
+      echo "$critical_chain" | prefix_stream
+    fi
+    
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/10-boot.txt" "Boot analysis" bash -lc 'systemd-analyze time; echo; systemd-analyze blame | head -n 60; echo; systemd-analyze critical-chain || true'
+    fi
+  else
+    warn "systemd-analyze not available"
+    bump_warn
+  fi
+
+  local failed
+  failed="$(systemctl --failed --no-legend 2>/dev/null | wc -l || true)"
+  if [[ "${failed:-0}" -gt 0 ]]; then
+    warn "Failed systemd units: $failed"
+    bump_warn
+    # Show failed units in summary
+    systemctl --failed --no-pager 2>/dev/null | head -n 10 | prefix_stream || true
+  else
+    emit "Failed systemd units: 0"
+  fi
+
+  # Check for boot errors in journal
+  local boot_errors
+  boot_errors="$(journalctl -b -p err..alert --no-pager 2>/dev/null | wc -l || echo "0")"
+  if [[ "${boot_errors:-0}" -gt 0 ]]; then
+    warn "Boot errors in journal: $boot_errors lines"
+    bump_warn
+  else
+    emit "Boot errors in journal: 0"
+  fi
+  
+  # Check for boot warnings
+  local boot_warnings
+  boot_warnings="$(journalctl -b -p warning --no-pager 2>/dev/null | wc -l || echo "0")"
+  if [[ "${boot_warnings:-0}" -gt 50 ]]; then
+    warn "Boot warnings in journal: $boot_warnings (high count)"
+    bump_warn
+  else
+    emit "Boot warnings in journal: $boot_warnings"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/11-systemd-failed.txt" "Failed systemd units" bash -lc 'systemctl --failed --no-pager; echo; systemctl list-units --state=failed --no-pager'
+    run_to_file "$OUTDIR/sections/12-systemd-errors.txt" "systemd errors from journal (this boot)" bash -lc 'journalctl -b -p err..alert --no-pager -o short-precise'
+    run_to_file "$OUTDIR/sections/13-systemd-warnings.txt" "systemd warnings from journal (this boot)" bash -lc 'journalctl -b -p warning --no-pager -o short-precise | head -n 100'
+  fi
+}
+
+# -----------------------
+# Section: Kernel and hardware signals
+# -----------------------
+kernel_and_hw() {
+  header "Checking kernel, firmware, and hardware related warnings"
+  local taint=""
+  if [[ -r /proc/sys/kernel/tainted ]]; then
+    taint="$(cat /proc/sys/kernel/tainted 2>/dev/null || true)"
+    if [[ -n "$taint" && "$taint" != "0" ]]; then
+      warn "Kernel tainted: $taint (non-zero)"
+      bump_warn
+    else
+      emit "Kernel tainted: 0"
+    fi
+  fi
+
+  # dmesg errors
+  local dmesg_err
+  dmesg_err="$(dmesg -T 2>/dev/null | grep -E "(\berror\b|\bfailed\b|\bfail\b|\bBUG:\b|\bpanic\b)" -i | head -n 5 || true)"
+  if [[ -n "$dmesg_err" ]]; then
+    warn "Kernel ring buffer shows errors"
+    bump_warn
+    emit ""
+    printf '%s\n' "$dmesg_err" | prefix_stream
+  else
+    emit "dmesg: no obvious error keywords in quick scan"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/20-dmesg.txt" "dmesg (this boot)" bash -lc 'dmesg -T'
+    run_to_file "$OUTDIR/sections/21-journal-kernel.txt" "kernel journal (this boot)" bash -lc 'journalctl -b -k --no-pager -o short-precise'
+    run_to_file "$OUTDIR/sections/22-hw-summary.txt" "Hardware summary" bash -lc 'lspci -nnk || true; echo; lsusb || true; echo; lscpu || true; echo; lsblk -f || true; echo; df -hT || true'
+  fi
+}
+
+# -----------------------
+# Section: Package manager integrity
+# -----------------------
+packages() {
+  header "Checking package database and broken deps"
+  if have dpkg; then
+    local broken
+    broken="$(dpkg --audit 2>/dev/null | wc -l || true)"
+    if [[ "${broken:-0}" -gt 0 ]]; then
+      warn "dpkg --audit reports issues"
+      bump_warn
+    else
+      emit "dpkg --audit: clean"
+    fi
+
+    # Check for half-installed states
+    local bad_states
+    bad_states="$(dpkg -l 2>/dev/null | awk 'NR>5 && $1 !~ /^ii$/ {print $0}' | head -n 1 || true)"
+    if [[ -n "$bad_states" ]]; then
+      warn "dpkg has non-ii package states"
+      emit ""
+      bump_warn
+      cmd dpkg -l | awk 'NR>5 && $1 !~ /^ii$/ {print $0}' | head -n 20
+    else
+      emit "dpkg package states: all ii (installed) in quick scan"
+    fi
+  fi
+
+  if have apt-get; then
+    # apt check without making changes
+    if ! apt-get -s check >/dev/null 2>&1; then
+      warn "apt check simulation indicates dependency problems"
+      bump_warn
+    else
+      emit "apt check simulation: ok"
+    fi
+  else
+    warn "apt-get not available"
+    bump_warn
+  fi
+
+  if have ubuntu-drivers; then
+    : # nothing to do by default
+  fi
+
+  if have snap; then
+    # Snap problems show up as "broken" or "disabled" often
+    local snap_count
+    snap_count="$(snap list 2>/dev/null | wc -l || true)"
+    [[ -n "$snap_count" ]] && emit "snap: present (list lines: $snap_count)"
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/30-snap.txt" "snap status" bash -lc 'snap version || true; echo; snap list || true; echo; systemctl status snapd --no-pager || true'
+    fi
+  else
+    emit "snap: not installed"
+  fi
+
+  if have flatpak; then
+    emit "flatpak: present"
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/31-flatpak.txt" "flatpak status" bash -lc 'flatpak --version || true; echo; flatpak remotes || true; echo; flatpak list || true'
+    fi
+  else
+    emit "flatpak: not installed"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/32-apt.txt" "apt and dpkg details" bash -lc 'dpkg --audit || true; echo; apt-get -s check || true; echo; apt-cache policy | head -n 80 || true'
+  fi
+}
+
+# -----------------------
+# Section: Logs and recurring errors
+# -----------------------
+logs() {
+  header "Scanning journal for high severity messages"
+  local err_count
+  err_count="$(journalctl -b -p err..alert --no-pager 2>/dev/null | wc -l || true)"
+  if [[ "${err_count:-0}" -gt 0 ]]; then
+    warn "journalctl reports errors this boot: $err_count lines"
+    bump_warn
+  else
+    emit "journal errors this boot: 0"
+  fi
+
+  # Recent warnings/errors over last 24h (if persistent journals exist)
+  local day_count
+  day_count="$(journalctl --since "24 hours ago" -p warning..alert --no-pager 2>/dev/null | wc -l || true)"
+  if [[ "${day_count:-0}" -gt 200 ]]; then
+    warn "journal warnings+ last 24h: $day_count (high). Check report."
+    bump_warn
+  else
+    emit "journal warnings+ last 24h: $day_count"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/40-journal-err-boot.txt" "journal errors (this boot)" bash -lc 'journalctl -b -p err..alert --no-pager -o short-precise'
+    run_to_file "$OUTDIR/sections/41-journal-warn-24h.txt" "journal warnings+ (last 24h)" bash -lc 'journalctl --since "24 hours ago" -p warning..alert --no-pager -o short-precise | tail -n 5000'
+  fi
+}
+
+# -----------------------
+# Section: GNOME extensions and shell health
+# -----------------------
+gnome() {
+  header "Checking GNOME extensions and shell related errors (best-effort)"
+  if have gsettings; then
+    local session
+    session="$(loginctl list-sessions --no-legend 2>/dev/null | awk 'NR==1{print $1}' || true)"
+    : # not required
+  fi
+
+  if have gnome-extensions; then
+    local ext_count enabled_count
+    ext_count="$(gnome-extensions list 2>/dev/null | wc -l || true)"
+    enabled_count="$(gnome-extensions list --enabled 2>/dev/null | wc -l || true)"
+    emit "GNOME extensions: total=${ext_count:-0}, enabled=${enabled_count:-0}"
+
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/50-gnome-extensions.txt" "GNOME extensions" bash -lc 'gnome-extensions list; echo; gnome-extensions list --enabled; echo; gnome-extensions list --disabled'
+    fi
+  else
+    emit "GNOME extensions: gnome-extensions CLI not found"
+  fi
+
+  # Shell errors in journal
+  local shell_err
+  shell_err="$(journalctl -b --no-pager 2>/dev/null | grep -Ei "gnome-shell|mutter|gjs|extension.*error" | tail -n 1 || true)"
+  if [[ -n "$shell_err" ]]; then
+    warn "GNOME shell related log activity detected (check report if generated)"
+    bump_warn
+  else
+    emit "GNOME shell log scan: nothing obvious in quick scan"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/51-gnome-shell-logs.txt" "GNOME shell logs (filtered, this boot)" bash -lc 'journalctl -b --no-pager -o short-precise | grep -Ei "gnome-shell|mutter|gjs|gnome-session|extension" || true'
+  fi
+}
+
+# -----------------------
+# Section: udev rules and device permissions
+# -----------------------
+udev_rules() {
+  header "Checking udev rules and device manager issues"
+  if have udevadm; then
+    # udevadm verify exists on many systems. If absent, do minimal checks.
+    if udevadm help 2>/dev/null | grep -q "verify"; then
+      if ! udevadm verify /etc/udev/rules.d >/dev/null 2>&1; then
+        warn "udevadm verify reports problems in /etc/udev/rules.d"
+        bump_warn
+      else
+        emit "udev rules verify: ok"
+      fi
+    else
+      emit "udev rules verify: unsupported on this udevadm build"
+    fi
+  else
+    warn "udevadm not found"
+    bump_warn
+  fi
+
+  # udev related errors in journal
+  local udev_err
+  udev_err="$(journalctl -b -p err..alert --no-pager 2>/dev/null | grep -Ei "udev|systemd-udevd" | head -n 1 || true)"
+  if [[ -n "$udev_err" ]]; then
+    warn "udev errors found in journal (this boot)"
+    bump_warn
+  else
+    emit "udev journal errors: 0"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/60-udev.txt" "udev rules and logs" bash -lc 'ls -la /etc/udev/rules.d || true; echo; ls -la /lib/udev/rules.d | head -n 200 || true; echo; journalctl -b --no-pager -o short-precise | grep -Ei "udev|systemd-udevd" || true'
+  fi
+}
+
+# -----------------------
+# Section: Firewall and networking rules
+# -----------------------
+firewall() {
+  header "Checking firewall state and rules"
+  local found=0
+
+  if have ufw; then
+    found=1
+    local st
+    st="$(ufw status 2>/dev/null | head -n 1 || true)"
+    if echo "$st" | grep -qi "active"; then
+      emit "ufw: ${st:-unknown} (active)"
+    else
+      warn "ufw: ${st:-unknown} (not active)"
+      bump_warn
+    fi
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/70-ufw.txt" "ufw status" bash -lc 'ufw status verbose || true; echo; systemctl status ufw --no-pager || true'
+    fi
+  fi
+
+  if have firewall-cmd; then
+    found=1
+    if firewall-cmd --state 2>/dev/null | grep -qi "running"; then
+      emit "firewalld: running"
+    else
+      warn "firewalld: not running"
+      bump_warn
+    fi
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/70-firewalld.txt" "firewalld status" bash -lc 'firewall-cmd --state || true; firewall-cmd --list-all || true'
+    fi
+  fi
+
+  if have nft; then
+    found=1
+    local nft_rules
+    nft_rules="$(nft list ruleset 2>/dev/null | wc -l || echo "0")"
+    if [[ "$nft_rules" -gt 0 ]]; then
+      emit "nftables: active ($nft_rules rules)"
+    else
+      warn "nftables: no rules found"
+      bump_warn
+    fi
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/71-nft.txt" "nft ruleset" bash -lc 'nft list ruleset || true'
+    fi
+  fi
+
+  if have iptables; then
+    found=1
+    local ipt_rules
+    ipt_rules="$(iptables -S 2>/dev/null | wc -l || echo "0")"
+    if [[ "$ipt_rules" -gt 0 ]]; then
+      emit "iptables: active ($ipt_rules rules)"
+    else
+      warn "iptables: no rules found"
+      bump_warn
+    fi
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/72-iptables.txt" "iptables rules" bash -lc 'iptables -S || true; echo; iptables -L -n -v || true'
+    fi
+  fi
+
+  if [[ "$found" -eq 0 ]]; then
+    warn "No firewall tooling found (ufw/nft/iptables/firewalld). That might be fine, or it might be a problem."
+    bump_warn
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/73-network.txt" "Network summary" bash -lc 'ip a || true; echo; ip r || true; echo; resolvectl status || true; echo; ss -lntup || true'
+  fi
+}
+
+# -----------------------
+# Section: Storage and filesystem signals
+# -----------------------
+storage() {
+  header "Checking storage health signals"
+  local df_out
+  df_out="$(df -hP 2>/dev/null | awk 'NR>1 {gsub("%","",$5); if ($5+0>=90) print $0}' || true)"
+  if [[ -n "$df_out" ]]; then
+    warn "Filesystems >= 90% used"
+    bump_warn
+    echo -e "$df_out"
+  else
+    emit "Disk usage: no filesystem >= 90% in quick scan"
+  fi
+
+  if have smartctl; then
+    emit "smartctl: present (report includes SMART summary if possible)"
+    if [[ "$REPORT" -eq 1 ]]; then
+      run_to_file "$OUTDIR/sections/80-smart.txt" "SMART summary (best-effort)" bash -lc '
+        lsblk -dn -o NAME,TYPE | awk "$2==\"disk\"{print \"/dev/\"$1}" | while read -r d; do
+          echo -e "## $d"
+          smartctl -H "$d" || true
+          echo
+        done
+      '
+    fi
+  else
+    emit "smartctl: not installed"
+  fi
+
+  if [[ "$REPORT" -eq 1 ]]; then
+    run_to_file "$OUTDIR/sections/81-storage.txt" "Storage summary" bash -lc 'lsblk -f || true; echo; df -hT || true; echo; mount | head -n 200'
+  fi
+}
+
+# -----------------------
+# Run
+# -----------------------
+if [[ "$REPORT" -eq 1 ]]; then
+  : >"$OUTDIR/summary.txt"
+  emit "Report dir: $OUTDIR"
+  emit "Generated:  $(date -Is)"
+  emit ""
+fi
+
+sys_basics
+boot_and_services
+kernel_and_hw
+packages
+logs
+gnome
+udev_rules
+firewall
+storage
+
+emit "\\n-----------------------------\\n"
+emit "Summary: warnings=$WARNINGS errors=$ERRORS"
+
+if [[ "$REPORT" -eq 1 ]]; then
+  tarball="${OUTDIR%/}.tar.gz"
+  tar -C "$(dirname "$OUTDIR")" -czf "$tarball" "$(basename "$OUTDIR")" >/dev/null 2>&1 || true
+  emit "Archive: $tarball"
+  emit "Tip: grep -R \"ERROR\\|WARN\" -n \"$OUTDIR/sections\""
+fi
+
+if [[ "$ERRORS" -gt 0 ]]; then
+  exit 2
+fi
+if [[ "$WARNINGS" -gt 0 ]]; then
+  exit 1
+fi
+exit 0
