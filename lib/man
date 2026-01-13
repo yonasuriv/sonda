@@ -18,6 +18,8 @@ Targets:
         devices               PCI and USB devices
         network               Network interfaces and active connections
         battery               Battery status and power information
+        boot                  Boot time analysis, warnings, and errors
+        security              Security baseline (firewall, SELinux/AppArmor, SSH, encryption)
         all                   All available system and network information (long output)
 
 Flags:
