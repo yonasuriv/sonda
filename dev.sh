@@ -87,7 +87,15 @@ check_deps() {
 
   if ! is_root; then
     if command -v sudo >/dev/null 2>&1; then
-      exec sudo -E bash "$0" deps
+      # If we're being called as part of 'all', don't use exec so we can continue
+      if [[ "${ORIGINAL_CMD:-}" == "all" ]]; then
+        # Run check_deps with sudo in a subshell, but don't exec
+        sudo -E bash -c "$(declare -f check_deps dep_satisfied apt_update_once apt_install need_cmd is_root die); check_deps" || die "Failed to check dependencies"
+        return 0
+      else
+        # For standalone 'deps' command, exec is fine
+        exec sudo -E bash "$0" deps
+      fi
     fi
     die "Run as root (or install sudo) to check dependencies."
   fi
@@ -180,7 +188,7 @@ install() {
   fi
   
   if [[ -z "${deb_file:-}" ]]; then
-    die "No sonda_*.deb file found. Run 'rebuild' first."
+    die "No sonda_*.deb file found. Run 'build' first."
   fi
   
   echo "Installing $deb_file..."
@@ -189,15 +197,14 @@ install() {
 
 case "${1:-}" in
   deps)     check_deps ;;
-  rebuild|build)  build ;;
+  build)  build ;;
   install)  install ;;
-  ""|all)   check_deps; build; install ;;
+  ""|all)   ORIGINAL_CMD="all" check_deps; build; install ;;
   *)
-    echo "Usage: $0 [deps|rebuild|build|install|all]" >&2
+    echo "Usage: $0 [deps|build|install|all]" >&2
     echo "" >&2
     echo "Commands:" >&2
     echo "  deps     - Check and install build dependencies" >&2
-    echo "  rebuild  - Clean and build the .deb package (alias for build)" >&2
     echo "  build    - Clean and build the .deb package" >&2
     echo "  install  - Install the built .deb package from dist/ or root" >&2
     echo "  all      - Run deps, build, and install (default)" >&2
