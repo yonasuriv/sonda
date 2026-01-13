@@ -378,6 +378,88 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check if TARGET was set during flag parsing
+if [[ -n "${TARGET:-}" ]]; then
+    # Process target that was set during flag parsing
+    case "$TARGET" in
+        pkgs|packages)
+            log_info "Showing package information"
+            LOGRUN "installed_packages"
+            ;;
+        cpu)
+            log_info "Showing CPU information"
+            LOGRUN "cpu_info"
+            ;;
+        gpu)
+            log_info "Showing GPU information"
+            LOGRUN "graphics_info"
+            ;;
+        disks)
+            log_info "Showing disk information"
+            LOGRUN "disk_storage_info"
+            ;;
+        memory|mem)
+            log_info "Showing memory information"
+            LOGRUN "memory_info"
+            LOGRUN "detailed_memory_info"
+            ;;
+        kernel|k)
+            log_info "Showing kernel information"
+            LOGRUN "kernel_boot_params"
+            LOGRUN "kernel_modules"
+            ;;
+        devices)
+            log_info "Showing device information"
+            LOGRUN "pci_devices"
+            LOGRUN "usb_devices"
+            ;;
+        network|networks)
+            log_info "Showing network information"
+            LOGRUN "network_info"
+            LOGRUN "network_connections"
+            ;;
+        battery)
+            log_info "Showing battery information"
+            LOGRUN "battery_info"
+            ;;
+        boot)
+            log_info "Showing boot information"
+            LOGRUN "boot_all"
+            ;;
+        security)
+            log_info "Showing security information"
+            LOGRUN "security_all"
+            ;;
+        all)
+            log_info "Showing all information"
+            LOGRUN "system_info"
+            LOGRUN "complete_system_info"
+            LOGRUN "kernel_boot_params" 
+            LOGRUN "kernel_modules" 
+            LOGRUN "battery_info" 
+            LOGRUN "cpu_info" 
+            LOGRUN "graphics_info" 
+            LOGRUN "memory_info" 
+            LOGRUN "detailed_memory_info" 
+            LOGRUN "disk_storage_info" 
+            LOGRUN "pci_devices" 
+            LOGRUN "usb_devices" 
+            LOGRUN "network_info" 
+            LOGRUN "network_connections" 
+            LOGRUN "installed_packages"
+            LOGRUN "boot_all"
+            LOGRUN "security_all"
+            ;;
+        *)
+            echo -e "${E} Unknown target: $TARGET${RT}" >&2
+            echo -e "${W} Use ${CYAN}sonda --help${RT} to see available targets.${RT}" >&2
+            exit 1
+            ;;
+    esac
+    # Exit after processing target (flags already processed)
+    exit 0
+fi
+
 # Check if no arguments are provided (default to sys command)
 if [[ $# -eq 0 ]]; then
     log_info "No arguments provided, showing default menu"
