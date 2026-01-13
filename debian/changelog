@@ -1,3 +1,43 @@
+sonda (2.0.0-1) unstable; urgency=medium
+
+  * Major version 2.0.0 - Complete architecture refactoring
+  * Introduced modular mode system (check/audit modes)
+  * Centralized configuration system with sonda.conf
+  * Added comprehensive audit mode with 13 phases
+  * Fixed all unbound variable errors across all modules
+  * Fixed all syntax errors in security and audit modules
+  * Improved flag parsing and argument handling
+  * Updated help system with mode-specific help
+  * Enhanced Debian package with audit mode support
+  * Complete testing and verification of all arguments
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Mon, 13 Jan 2026 23:50:00 +0000
+
+sonda (1.8.7-1) unstable; urgency=medium
+
+  * Fixed security module syntax errors
+  * Improved flag parsing
+  * Complete argument testing
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Mon, 13 Jan 2026 19:00:00 +0000
+
+sonda (1.8.6-1) unstable; urgency=medium
+
+  * Added boot information module
+  * Added security module
+  * Enhanced CPU, disk, and network modules
+  * Improved test module integration
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Mon, 12 Jan 2026 18:00:00 +0000
+
+sonda (1.8.5-1) unstable; urgency=medium
+
+  * Moved version file to root directory
+  * Organized documentation structure
+  * Updated all version references
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Mon, 12 Jan 2026 16:00:00 +0000
+
 sonda (1.8.2-1) unstable; urgency=medium
 
   * Initial Debian package release

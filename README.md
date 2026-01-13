@@ -73,10 +73,10 @@ It also pushes real-time updates straight to your terminal — things like packa
 To install Sonda, simply clone the repository and run the setup script:
 
 ```bash
-git clone https://github.com/yonasuriv/sonda && cd sonda && ./SETUP -i
+git clone https://github.com/yonasuriv/sonda && cd sonda && ./deb.sh all
 ```
 
-All requirements and dependencies are handled automatically. To uninstall it run `./SETUP -u`
+All requirements and dependencies are handled automatically. To uninstall it run `sudo dpkg -r sonda`
 
 Once installed, you can run Sonda from the terminal:
 

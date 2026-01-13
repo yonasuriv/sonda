@@ -2,6 +2,72 @@
 
 All notable changes to Sonda will be documented in this file.
 
+## [2.0.0] - 2026-01-13
+
+### Major Changes
+- **Complete Architecture Refactoring**: Introduced modular mode system with separate `check` and `audit` modes
+- **Centralized Configuration**: Created `sonda.conf` as single source of truth for all paths and variables
+- **Mode System**: Implemented `-C` (check) and `-A` (audit) flags for explicit mode selection
+- **Path Management**: All paths now use variables from centralized config, no hardcoded paths
+
+### Added
+- **Audit Mode**: Complete boot session auditor with phase-driven analysis
+  - 13 audit phases covering firmware to desktop session
+  - Comprehensive error, warning, and failure tracking
+  - Detailed logging and anonymization support
+  - Security posture analysis
+- **Check Mode Enhancements**:
+  - All targets working: cpu, gpu, disks, memory, kernel, devices, network, battery, boot, security, packages, all
+  - Flag combinations: `-s`, `--save`, `-nc`, `--no-color`, `-v`, `-vv`, `-vvv`
+  - Flags can appear before or after `-T target`
+- **Configuration System**:
+  - `load_sonda_config()` function automatically exports all variables
+  - Shared core files in `src/lib/core/`
+  - Mode-specific helpers in `src/modes/{check,audit}/helpers/`
+- **Security Module**:
+  - Firewall status (UFW, nftables, iptables, firewalld)
+  - SELinux/AppArmor detection
+  - SSH service status
+  - Disk encryption detection
+  - Security posture summary
+
+### Fixed
+- **Unbound Variable Errors**: Fixed all unbound variable issues across all modules
+  - `layout.sh`: Fixed `print_header()` and `print_phase_header()` parameters
+  - `anonimizer.sh`: Fixed `_ANON_INITIALIZED` and `AUDIT_DUMMY_IP` checks
+  - `config.sh`: Fixed `AUDIT_PROJECT_ROOT` checks
+  - `paths.sh`: Fixed all `AUDIT_PROJECT_ROOT` checks
+- **Syntax Errors**: Fixed all `wc -l` parsing errors
+  - Security module: nftables, iptables, ip6tables, AppArmor
+  - Audit kernel module: hardware errors, kernel errors, warnings, module failures
+  - Audit security module: NFT_RULES, IPT_RULES
+- **Module Errors**: Fixed unbound `$key` variable in multiple modules
+  - kernel, memory, devices, packages modules
+- **Flag Parsing**: Fixed flag parsing to handle flags before/after `-T target`
+- **Path Resolution**: Fixed audit mode `sudo.sh` path resolution
+
+### Changed
+- **Directory Structure**:
+  - `src/modes/check/` - Check mode (formerly main script)
+  - `src/modes/audit/` - Audit mode (new)
+  - `src/lib/core/` - Shared core configuration
+  - `src/lib/common/` - Shared common utilities
+- **Help System**: Mode-specific help messages (`-C --help`, `-A --help`)
+- **Installation**: Updated Debian package to include audit mode and set proper permissions
+
+### Documentation
+- Updated all documentation to reflect new architecture
+- Added comprehensive testing documentation
+- Updated installation guides
+- Created audit mode documentation
+
+## [1.8.7] - 2026-01-13
+
+### Fixed
+- Security module syntax errors
+- Flag parsing improvements
+- Complete argument testing and verification
+
 ## [1.8.6] - 2026-01-12
 
 ### Added
