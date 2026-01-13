@@ -172,20 +172,8 @@ build() {
 }
 
 install() {
-  # Find the .deb file in dist/ directory only
-  local deb_file=""
-  
-  # Check dist directory for packages
-  if [[ -d "dist" ]]; then
-    deb_file=$(find dist -name "sonda_*.deb" -type f 2>/dev/null | sort -V | tail -n 1 || true)
-  fi
-  
-  if [[ -z "${deb_file:-}" ]]; then
-    die "No sonda_*.deb file found in dist/ directory. Run 'build' first."
-  fi
-  
-  echo "Installing $deb_file..."
-  sudo dpkg -i "$deb_file"
+  # Use debian/rules install-package target
+  make -f debian/rules install-package
 }
 
 case "${1:-}" in

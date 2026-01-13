@@ -16,8 +16,9 @@ DIST_DIR := dist/sonda_$(DEB_VERSION)
 	dh $@
 
 # Custom targets for building and managing packages
-# Note: 'build' target is NOT here - dpkg-buildpackage handles that
-.PHONY: clean install package collect help uninstall
+# Note: 'build' and 'install' targets are debhelper targets - don't override them
+# Use 'install-package' for installing the built .deb file
+.PHONY: clean install-package package collect help uninstall
 
 clean:
 	@echo ""
@@ -44,22 +45,22 @@ collect:
 	@echo ""
 	@echo "Collecting build artifacts..."
 	@mkdir -p $(DIST_DIR)
-	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then cp -a $(PACKAGE_NAME) $(DIST_DIR)/; fi'
-	@bash -c 'if ls sonda_$(DEB_VERSION)_*.buildinfo 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION)_*.buildinfo $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if ls sonda_$(DEB_VERSION)_*.changes 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION)_*.changes $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if [ -f sonda_$(DEB_VERSION).dsc ]; then cp -a sonda_$(DEB_VERSION).dsc $(DIST_DIR)/ 2>/dev/null || true; fi'
-	@bash -c 'if ls sonda_$(DEB_VERSION).tar.* 2>/dev/null | head -1 | grep -q .; then cp -a sonda_$(DEB_VERSION).tar.* $(DIST_DIR)/ 2>/dev/null || true; fi'
+	@bash -c 'for deb in $(PACKAGE_NAME) ../$(PACKAGE_NAME) sonda_*.deb ../sonda_*.deb; do if [ -f "$$deb" ] 2>/dev/null; then cp -a "$$deb" $(DIST_DIR)/ 2>/dev/null && echo "Collected: $$deb" && break; fi; done'
+	@bash -c 'for f in sonda_*_*.buildinfo ../sonda_*_*.buildinfo; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
+	@bash -c 'for f in sonda_*_*.changes ../sonda_*_*.changes; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
+	@bash -c 'for f in sonda_*.dsc ../sonda_*.dsc; do if [ -f "$$f" ] 2>/dev/null; then cp -a "$$f" $(DIST_DIR)/ 2>/dev/null && break; fi; done'
+	@bash -c 'for f in sonda_*.tar.* ../sonda_*.tar.*; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
 	@echo "Collected artifacts in $(DIST_DIR)"
 	@echo ""
 
 package:
 	@echo "Package: $(PACKAGE_NAME)"
-	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); else echo "Package not found in $(DIST_DIR) or root. Run build first."; fi'
+	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -n "$$deb_file" ]; then ls -lh "$$deb_file"; elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then ls -lh ../$(PACKAGE_NAME); else echo "Package not found in $(DIST_DIR) or root. Run build first."; fi'
 
-install: package
+install-package:
 	@echo ""
 	@echo "Installing package..."
-	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then sudo dpkg -i $(DIST_DIR)/$(PACKAGE_NAME); else echo "Error: Package $(PACKAGE_NAME) not found in $(DIST_DIR)"; exit 1; fi'
+	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -n "$$deb_file" ]; then sudo dpkg -i "$$deb_file"; else echo "Error: No .deb package found in $(DIST_DIR)"; exit 1; fi'
 	@echo "Installation complete!"
 	@echo ""
 
@@ -72,12 +73,12 @@ help:
 	@echo "Sonda Debian Package Build System"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make -f debian/rules clean      - Clean build artifacts"
-	@echo "  make -f debian/rules collect    - Collect build artifacts to dist/"
-	@echo "  make -f debian/rules package    - Show package info from dist/"
-	@echo "  make -f debian/rules install    - Install the package from dist/"
-	@echo "  make -f debian/rules uninstall  - Uninstall the package"
-	@echo "  make -f debian/rules help        - Show this help message"
+	@echo "  make -f debian/rules clean         - Clean build artifacts"
+	@echo "  make -f debian/rules collect       - Collect build artifacts to dist/"
+	@echo "  make -f debian/rules package       - Show package info from dist/"
+	@echo "  make -f debian/rules install-package - Install the package from dist/"
+	@echo "  make -f debian/rules uninstall      - Uninstall the package"
+	@echo "  make -f debian/rules help           - Show this help message"
 	@echo ""
 	@echo "Note: Use 'dpkg-buildpackage -us -uc -b' or './deb.sh build' to build"
 	@echo ""
