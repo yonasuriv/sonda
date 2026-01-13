@@ -15,3 +15,7 @@ function kernel_modules {
         pprint "lsmod"
     fi
 }
+
+# TODO: Kernel errors and warnings
+#sudo dmesg -T --level=err,crit,alert,emerg
+#sudo dmesg -T --level=warn
