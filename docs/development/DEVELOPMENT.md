@@ -340,9 +340,16 @@ echo "[i] File created..." | cat - "$LOGFILE" > temp_file && mv temp_file "$LOGF
    - `curl` - For fetching remote version information
    - `git` - For cloning and updating the repository
    - `python3` - For network information module
+   - `python3-psutil` - For network interface information
+   - `python3-requests` - For IP geolocation API calls
+   - `python3-colorama` - For colored terminal output
    - `lspci` - For hardware information (usually in `pciutils` package)
-   - `lolcat` - For colored output (optional)
-   - `inxi` - For system information (optional)
+   - `inxi` - For system information
+   - `net-tools`, `sysstat`, `mesa-utils`, `upower`, `wmctrl`, `x11-xserver-utils`, `libglib2.0-bin` - System utilities
+   
+   **Optional:**
+   - `lolcat` - For rainbow-colored output (falls back to single color if not installed)
+   - `python3-pip` - For manual Python package management
 
 ### Clean Installation
 

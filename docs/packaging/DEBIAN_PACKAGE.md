@@ -107,10 +107,17 @@ The package automatically handles these dependencies:
 - python3-colorama
 - inxi
 - pciutils
-- lolcat
+- net-tools
+- sysstat
+- mesa-utils
+- upower
+- wmctrl
+- x11-xserver-utils
+- libglib2.0-bin
 
 **Recommended:**
 - python3-pip
+- lolcat (optional - falls back to single color if not installed)
 
 All dependencies are automatically installed when you run `apt-get install -f` after installing the .deb file.
 

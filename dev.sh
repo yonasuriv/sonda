@@ -1,24 +1,18 @@
 #!/usr/bin/env bash
 # Purpose: Fast rebuild and/or install the sonda .deb.
-# Usage: ./dev.sh [rebuild|install]
-# Notes: Runs make in current dir. Installs ../sonda_*.deb via sudo dpkg -i.
-
-#!/usr/bin/env bash
-# sonda-apt-builddeps.sh | v1.0 | Purpose: Ensure required APT build dependencies are installed | Author: ChatGPT | License: MIT
+# Usage: ./dev.sh [rebuild|install|deps|all]
+# Notes: Runs make in current dir. Installs sonda_*.deb via sudo dpkg -i.
 
 set -euo pipefail
 
+# Build dependencies only (minimal set needed to build the .deb package)
+# Runtime dependencies are defined in debian/control
 DEPS=(
   build-essential
   "debhelper-compat (= 13)"
   dh-python
   python3-all
   python3-pip
-  python3-colorama
-  net-tools
-  mesa-utils
-  wmctrl
-  lolcat
 )
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -34,8 +28,9 @@ is_root() { [[ "${EUID:-$(id -u)}" -eq 0 ]]; }
 dep_satisfied() {
   local dep="$1"
   local pkg op ver
+  local regex='^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\(([[:space:]]*[<>=]+[[:space:]]*)([^)]+)\)[[:space:]]*$'
 
-  if [[ "$dep" =~ ^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\(([[:space:]]*[<>=]+[[:space:]]*)([^)]+)\)[[:space:]]*$ ]]; then
+  if [[ "$dep" =~ $regex ]]; then
     pkg="${BASH_REMATCH[1]}"
     op="$(echo "${BASH_REMATCH[2]}" | xargs)"
     ver="$(echo "${BASH_REMATCH[3]}" | xargs)"
@@ -67,16 +62,16 @@ apt_install() {
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${pkgs[@]}"
 }
 
-main() {
+check_deps() {
   need_cmd apt-get
   need_cmd dpkg-query
   need_cmd dpkg
 
   if ! is_root; then
     if command -v sudo >/dev/null 2>&1; then
-      exec sudo -E bash "$0" "$@"
+      exec sudo -E bash "$0" deps
     fi
-    die "Run as root (or install sudo)."
+    die "Run as root (or install sudo) to check dependencies."
   fi
 
   local missing=()
@@ -90,7 +85,8 @@ main() {
     # For apt install, strip version constraint because APT cannot install "pkg (= X)" reliably
     # unless the exact version exists in enabled repos. We prefer ensuring the package exists,
     # then validate the version constraint post-install.
-    if [[ "$dep" =~ ^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\( ]]; then
+    local pkg_regex='^([a-z0-9][a-z0-9+.-]+)[[:space:]]*\('
+    if [[ "$dep" =~ $pkg_regex ]]; then
       pkg="${BASH_REMATCH[1]}"
       missing+=("$pkg")
     else
@@ -100,7 +96,7 @@ main() {
 
   if [[ "${#missing[@]}" -eq 0 ]]; then
     echo "All required build dependencies are already installed."
-    exit 0
+    return 0
   fi
 
   echo "Missing packages: ${missing[*]}"
@@ -133,25 +129,37 @@ EOF
   echo "Build dependencies satisfied."
 }
 
-main "$@"
-
-
-
 rebuild() {
   make clean
   make build | tail -3
 }
 
 install() {
-  sudo dpkg -I ../sonda_*.deb
+  # Find the .deb file in current directory
+  local deb_file
+  deb_file=$(find . -maxdepth 1 -name "sonda_*.deb" -type f | head -n 1)
+  
+  if [[ -z "$deb_file" ]]; then
+    die "No sonda_*.deb file found in current directory. Run 'rebuild' first."
+  fi
+  
+  echo "Installing $deb_file..."
+  sudo dpkg -i "$deb_file"
 }
 
 case "${1:-}" in
-  rebuild) rebuild ;;
-  install) install ;;
-  ""|all)  rebuild; install ;;
+  deps)     check_deps ;;
+  rebuild)  rebuild ;;
+  install)  install ;;
+  ""|all)   check_deps; rebuild; install ;;
   *)
-    echo "Usage: $0 [rebuild|install|all]" >&2
+    echo "Usage: $0 [deps|rebuild|install|all]" >&2
+    echo "" >&2
+    echo "Commands:" >&2
+    echo "  deps     - Check and install build dependencies" >&2
+    echo "  rebuild  - Clean and build the .deb package" >&2
+    echo "  install  - Install the built .deb package" >&2
+    echo "  all      - Run deps, rebuild, and install (default)" >&2
     exit 2
     ;;
 esac

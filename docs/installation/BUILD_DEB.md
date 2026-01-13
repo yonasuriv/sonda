@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Install build dependencies:
+Install build dependencies (minimal set - only what's needed to build):
 
 ```bash
 sudo apt update

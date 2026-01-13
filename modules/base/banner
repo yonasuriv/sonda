@@ -90,5 +90,9 @@ else
 fi 
 
 #####################################################################################
-printf "${LB}$(echo -e "[DATA SONDA $(cat $VERSION_FILE 2>/dev/null || echo "unknown")]" | lolcat -f)" && echo -e " $sys_status $net_status $restart_recommended $update_recommended${LB}"
+if command -v lolcat >/dev/null 2>&1; then
+    printf "${LB}$(echo -e "[DATA SONDA $(cat $VERSION_FILE 2>/dev/null || echo "unknown")]" | lolcat -f)" && echo -e " $sys_status $net_status $restart_recommended $update_recommended${LB}"
+else
+    printf "${LB}${CYAN}[DATA SONDA $(cat $VERSION_FILE 2>/dev/null || echo "unknown")]${RT}" && echo -e " $sys_status $net_status $restart_recommended $update_recommended${LB}"
+fi
 #####################################################################################

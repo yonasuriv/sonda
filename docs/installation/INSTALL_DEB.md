@@ -5,9 +5,9 @@
 ### Step 1: Build the Package
 
 ```bash
-# Install build dependencies (one-time setup)
+# Install build dependencies (one-time setup - minimal set)
 sudo apt update
-sudo apt install -y build-essential debhelper dh-python python3-all
+sudo apt install -y build-essential debhelper-compat dh-python python3-all python3-pip
 
 # Build the package
 make build

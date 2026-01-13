@@ -26,9 +26,9 @@ Depends: ${misc:Depends},
          upower,
          wmctrl,
          x11-xserver-utils,
-         libglib2.0-bin,
-         lolcat
-Recommends: python3-pip
+         libglib2.0-bin
+Recommends: python3-pip,
+            lolcat
 
 Description: System and Network Information Tool
  Sonda is a comprehensive system information utility for Linux that provides
