@@ -26,7 +26,7 @@ get_project_root() {
         return 0
     fi
     
-    # Calculate from src/modes/audit/lib/ location (go up 3 levels)
+    # Calculate from src/modes/audit/helpers/ location (go up 3 levels)
     local script_dir="$(get_script_dir)"
     local project_root="$(cd "$script_dir/../../../.." && pwd)"
     
