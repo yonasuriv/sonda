@@ -99,7 +99,7 @@ fi
 # (check_version_only and perform_update)
 
 # Source info modules
-for module in battery cpu devices disks gpu kernel memory network packages; do
+for module in battery boot cpu devices disks gpu kernel memory network packages security; do
     if [[ -f "$MODINFO/$module" ]]; then
         source "$MODINFO/$module" 2>/dev/null || log_warn "Failed to source module: $module"
     fi
@@ -396,6 +396,8 @@ perform_update() {
     fi
 }
 
+# Remember to update any changes below accordingly in the help manual under lib/man
+
 # Parse flags first (they can appear anywhere and be combined)
 VLEVEL=""
 while [[ $# -gt 0 ]]; do
@@ -519,6 +521,14 @@ while [[ $# -gt 0 ]]; do
                     log_info "Showing battery information"
                     LOGRUN "battery_info"
                     ;;
+                boot)
+                    log_info "Showing boot information"
+                    LOGRUN "boot_all"
+                    ;;
+                security)
+                    log_info "Showing security information"
+                    LOGRUN "security_all"
+                    ;;
                 all)
                     log_info "Showing all information"
                     LOGRUN "system_info"
@@ -536,6 +546,8 @@ while [[ $# -gt 0 ]]; do
                     LOGRUN "network_info" 
                     LOGRUN "network_connections" 
                     LOGRUN "installed_packages"
+                    LOGRUN "boot_all"
+                    LOGRUN "security_all"
                     ;;
                 *)
                     echo -e "${E} Unknown target: $TARGET${RT}" >&2
