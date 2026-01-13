@@ -16,7 +16,8 @@ DIST_DIR := dist/sonda_$(DEB_VERSION)
 	dh $@
 
 # Custom targets for building and managing packages
-.PHONY: clean build install package collect help uninstall
+# Note: 'build' target is NOT here - dpkg-buildpackage handles that
+.PHONY: clean install package collect help uninstall
 
 clean:
 	@echo ""
@@ -51,19 +52,9 @@ collect:
 	@echo "Collected artifacts in $(DIST_DIR)"
 	@echo ""
 
-build: clean
-	@echo ""
-	@echo "Building debian package..."
-	@echo ""
-	dpkg-buildpackage -us -uc -b
-	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then echo "Package built: $(PACKAGE_NAME)"; fi'
-	@echo ""
-	@echo "Package built successfully."
-	@$(MAKE) -f debian/rules collect
-
-package: build
+package:
 	@echo "Package: $(PACKAGE_NAME)"
-	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); else echo "Package not found"; fi'
+	@bash -c 'if [ -f $(DIST_DIR)/$(PACKAGE_NAME) ]; then ls -lh $(DIST_DIR)/$(PACKAGE_NAME); elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); else echo "Package not found in $(DIST_DIR) or root. Run build first."; fi'
 
 install: package
 	@echo ""
@@ -82,11 +73,13 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make -f debian/rules clean      - Clean build artifacts"
-	@echo "  make -f debian/rules build      - Build the Debian package"
-	@echo "  make -f debian/rules package    - Build and show package info"
-	@echo "  make -f debian/rules install    - Build and install the package from dist/"
+	@echo "  make -f debian/rules collect    - Collect build artifacts to dist/"
+	@echo "  make -f debian/rules package    - Show package info from dist/"
+	@echo "  make -f debian/rules install    - Install the package from dist/"
 	@echo "  make -f debian/rules uninstall  - Uninstall the package"
 	@echo "  make -f debian/rules help        - Show this help message"
+	@echo ""
+	@echo "Note: Use 'dpkg-buildpackage -us -uc -b' or './deb.sh build' to build"
 	@echo ""
 	@echo "Manual installation:"
 	@echo "  sudo dpkg -i dist/sonda_*/sonda_*.deb"

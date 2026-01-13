@@ -162,7 +162,13 @@ EOF
 
 build() {
   make -f debian/rules clean
-  make -f debian/rules build | tail -3
+  echo ""
+  echo "Building debian package..."
+  echo ""
+  dpkg-buildpackage -us -uc -b
+  echo ""
+  echo "Package built successfully."
+  make -f debian/rules collect
 }
 
 install() {
