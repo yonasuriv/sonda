@@ -41,7 +41,7 @@ This directory contains all documentation for the Sonda system information tool.
 
 ## Version Information
 
-Current version: **1.8.5**
+Current version: **1.8.6**
 
 Version file location: `/version` (root directory)
 
