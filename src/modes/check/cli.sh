@@ -361,6 +361,16 @@ while [[ $# -gt 0 ]]; do
             log_info "Setting verbosity level: $VLEVEL"
             shift
             ;;
+        -T)
+            # Target flag - handle it but continue parsing flags after target
+            if [[ $# -lt 2 ]]; then
+                echo -e "${E} -T requires a target. Use ${CYAN}sonda --help${RT} to see available targets.${RT}" >&2
+                exit 1
+            fi
+            TARGET="$2"
+            shift 2
+            # Continue parsing - flags can come after -T target
+            ;;
         *)
             # Not a flag, break and process as command/target
             break
