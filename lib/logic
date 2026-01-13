@@ -341,6 +341,59 @@ function system_info {
     total_pkg_update_count=$(($UPGRADABLE + $SECURITY_UPDATES))
 
     # Function to calculate time since the last update
+    # Get network status with VPN/protected/exposed detection
+    get_network_status() {
+        # First check basic connectivity
+        if ! ping -c 1 -W 2 1.1.1.1 >/dev/null 2>&1; then
+            echo -e "${NKBRRED}[NO INTERNET]${RT}"
+            return
+        fi
+        
+        # Try to get public IP info using curl (faster and more reliable than Python script for simple status)
+        if ! command -v curl >/dev/null 2>&1; then
+            # Fallback to simple ping check
+            echo -e "${NKBRGREEN}[NETWORK CONNECTED]${RT}"
+            return
+        fi
+        
+        # Get IP info with timeout
+        ip_info=$(curl -s --max-time 3 "https://ipinfo.io/json" 2>/dev/null)
+        
+        if [[ -z "$ip_info" ]]; then
+            echo -e "${NKBRGREEN}[NETWORK CONNECTED]${RT}"
+            return
+        fi
+        
+        # Extract ISP and hostname
+        isp=$(echo "$ip_info" | grep -o '"org":"[^"]*' | cut -d'"' -f4 || echo "")
+        hostname=$(echo "$ip_info" | grep -o '"hostname":"[^"]*' | cut -d'"' -f4 || echo "")
+        
+        # VPN/Hosting/Cloud indicators (matching Python script logic)
+        vpn_indicators="VPN VPS Hosting Colo Datacenter DC Server Amazon AWS Azure GCP Google Microsoft Tailscale DigitalOcean Linode OVH Hetzner Contabo Oracle Netcup UpCloud Vultr Scaleway Kamatera IBMCloud Fortinet Cisco Juniper Palo Alto GlobalProtect AnyConnect SonicWall Checkpoint Citrix NetScaler F5 BIG-IP NordVPN ExpressVPN Surfshark Proton IPVanish TunnelBear PIA PrivateInternetAccess Windscribe CyberGhost Hotspot Datacamp Datapacket"
+        
+        # Check if ISP or hostname contains VPN indicators (case-insensitive, minimum 4 chars)
+        is_vpn=0
+        isp_lower=$(echo "$isp" | tr '[:upper:]' '[:lower:]')
+        hostname_lower=$(echo "$hostname" | tr '[:upper:]' '[:lower:]')
+        
+        for indicator in $vpn_indicators; do
+            if [[ ${#indicator} -ge 4 ]]; then
+                indicator_lower=$(echo "$indicator" | tr '[:upper:]' '[:lower:]')
+                if [[ "$isp_lower" == *"$indicator_lower"* ]] || [[ "$hostname_lower" == *"$indicator_lower"* ]]; then
+                    is_vpn=1
+                    break
+                fi
+            fi
+        done
+        
+        # Return appropriate status
+        if [[ "$is_vpn" -eq 1 ]]; then
+            echo -e "${NKBRGREEN}[VPN PROTECTED]${RT}"
+        else
+            echo -e "${NKBRYELLOW}[PUBLIC IP EXPOSED]${RT}"
+        fi
+    }
+    
     calculate_time_since_last_update() {
         # Initialize LAST_UPDATE_DATE if not set
         if [[ -z "${LAST_UPDATE_DATE:-}" ]]; then
@@ -408,7 +461,8 @@ function system_info {
     
     # $current_date 
     echo ""
-    net_status=$(ping -c 1 1.1.1.1 > /dev/null 2>&1 && echo -e "${GREEN2}${RT}${GREEN}NETWORK CONNECTED${RT}" || echo -e "${RED2}${RT} ${RED}Disconnected${RT}")
+    # Use enhanced network status function
+    net_status=$(get_network_status)
 
     
     if [ "$total_pkg_update_count" -eq 0 ]; then
