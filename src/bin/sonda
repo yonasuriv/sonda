@@ -18,7 +18,6 @@ fi
 # meta: bash. purpose=find-config-recursive. version=1
 #ROOT_DIR="$PWD/src"; find "$ROOT_DIR" -type f -name 'sonda.conf' -print
 SONDA_CONFIG_NAME="config.sh"
-SONDA_CONFIG_PATH="src/lib/core/$SONDA_CONFIG_NAME"
 
 # Resolve the real script location (handles symlinks, PATH execution)
 _script_path="$(realpath -e -- "${BASH_SOURCE[0]}")"
@@ -28,17 +27,20 @@ _script_dir="$(dirname -- "$_script_path")"
 case "$_script_dir" in
   /usr/bin|/usr/sbin|/bin|/sbin)
      INSTALL_DIR="/usr/share/sonda"
-     CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+     # When installed: lib/core/config.sh (no src/ prefix)
+     CFG_FILE="$INSTALL_DIR/lib/core/$SONDA_CONFIG_NAME"
     ;;
     "$HOME/.local/bin"|"$HOME/.local/sbin")
      INSTALL_DIR="$HOME/.local/share/sonda"
-     CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+     # When installed: lib/core/config.sh (no src/ prefix)
+     CFG_FILE="$INSTALL_DIR/lib/core/$SONDA_CONFIG_NAME"
     ;;
   *)
     # Fallback - running from source
     _script_dir="$(realpath -e -- "$(dirname -- "$_script_path")/../..")"
     INSTALL_DIR="$_script_dir"
-    CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+    # When running from source: src/lib/core/config.sh (with src/ prefix)
+    CFG_FILE="$INSTALL_DIR/src/lib/core/$SONDA_CONFIG_NAME"
     ;;
 esac
 
