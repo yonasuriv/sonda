@@ -4,47 +4,43 @@
 # System information checking and reporting
 
 # Core paths are already set by main sonda script
-# INSTALLDIR, HOMEUSER, VERSION_FILE, ASSETS, LOGFILE_DIR, LOGFILE are exported
+# INSTALL_DIR, HOMEUSER, VERSION_FILE, ASSETS, LOGFILE_DIR, LOGFILE are exported
 
 # Check mode specific paths
 # All paths are now defined in sonda.conf and exported by main script
 set -a
 
-# Use variables from sonda.conf (already exported)
-LIB="$CHECK_LIB"
-SHARED_CORE="$SONDA_SHARED_CORE"
-MODULES="$CHECK_MODULES"
-CONFIG="$CHECK_CONFIG"
 
-# FILES (using variables from sonda.conf)
-STYLE="$CHECK_STYLE"
-LOGIC="$CHECK_LOGIC"
-LOGO="$CHECK_LOGO"
-LOGGER="$CHECK_LOGGER"
-MAN="$CHECK_MAN"
-
-BANNER="$CHECK_BANNER"
-DEFAULT="$CHECK_DEFAULT"
-SYSINFO="$CHECK_SYSINFO"
-NETINFO="$CHECK_NETINFO"
-CONFIG_FILE="$CHECK_CONFIG_FILE"
 
 # Source required files with error handling
-if [[ -f "$STYLE" ]]; then
+# Map config variables to expected names
+STYLE="${STYLE_FILE:-}"
+LOGIC="${SCAN_LOGIC:-}"
+UTILS="${SCAN_UTILS:-}"
+LOGO="${SCAN_LOGO:-}"
+LOGGER="${SCAN_LOGGER:-}"
+BANNER="${SCAN_BANNER:-}"
+
+if [[ -f "${STYLE:-}" ]]; then
     source "$STYLE" 2>/dev/null || log_warn "Failed to source style file"
 else
-    log_error "Style file not found: $STYLE"
+    log_error "Style file not found: ${STYLE:-}"
     exit 1
 fi
 
-if [[ -f "$LOGIC" ]]; then
+# Source utils first (contains pprint)
+if [[ -f "${UTILS:-}" ]]; then
+    source "$UTILS" 2>/dev/null || log_warn "Failed to source utils file"
+fi
+
+if [[ -f "${LOGIC:-}" ]]; then
     source "$LOGIC" 2>/dev/null || log_warn "Failed to source logic file"
 else
-    log_error "Logic file not found: $LOGIC"
+    log_error "Logic file not found: ${LOGIC:-}"
     exit 1
 fi
 
-if [[ -f "$LOGO" ]]; then
+if [[ -f "${LOGO:-}" ]]; then
     source "$LOGO" 2>/dev/null || log_warn "Failed to source logo file"
 fi
 
@@ -55,12 +51,14 @@ fi
 
 # Source info modules (now directly in modules/)
 for module in battery boot cpu devices disks gpu kernel memory network packages security; do
-    if [[ -f "$MODULES/$module" ]]; then
-        source "$MODULES/$module" 2>/dev/null || log_warn "Failed to source module: $module"
+    if [[ -f "$SCAN_MODULES/$module.sh" ]]; then
+        source "$SCAN_MODULES/$module.sh" 2>/dev/null || log_warn "Failed to source module: $module"
+    elif [[ -f "$SCAN_MODULES/$module" ]]; then
+        source "$SCAN_MODULES/$module" 2>/dev/null || log_warn "Failed to source module: $module"
     fi
 done
 
-USAGE="$MAN"
+# USAGE is no longer needed - help is handled by PRINT_HELP
 
 set +a
 
@@ -175,170 +173,7 @@ function LOGRUN {
     fi
 }
 
-# Enhanced version checking function
-check_version_only() {
-    local local_version
-    local remote_version
-    
-    log_info "Checking for updates (check-only mode)"
-    
-    # Get local version
-    if [[ -f "$VERSION_FILE" ]]; then
-        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-    else
-        echo -e "${E} Local version file not found.${RT}" >&2
-        log_error "Local version file not found: $VERSION_FILE"
-        return 1
-    fi
-    
-    # Get remote version
-    if ! command -v curl &> /dev/null; then
-        echo -e "${E} curl not found. Cannot check remote version.${RT}" >&2
-        log_error "curl not found"
-        return 1
-    fi
-    
-    remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
-        2>/dev/null | tr -d '\n\r ' || echo "")
-    
-    if [[ -z "$remote_version" ]]; then
-        echo -e "${E} Failed to retrieve remote version. Check your internet connection.${RT}" >&2
-        log_error "Failed to retrieve remote version"
-        return 1
-    fi
-    
-    # Compare versions
-    if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "${S} ${BLUE}Sonda version${RT} $local_version ${GREEN}(running the latest version)${RT}"
-        log_info "Version check: up to date ($local_version)"
-        return 0
-    else
-        echo -e "${W} There is a new version disponible: ${GREEN2}$remote_version${RT} (upgradable from ${YELLOW2}$local_version${RT})\n"
-        echo -e "    Run ${CYAN}sonda --upgrade${RT} to get the latest version.${RT}"
-        log_info "Version check: update available ($local_version -> $remote_version)"
-        return 2
-    fi
-}
 
-# Enhanced update function
-perform_update() {
-    local local_version
-    local remote_version
-    local update_status=0
-    
-    log_info "Starting update process"
-    
-    # Get local version
-    if [[ -f "$VERSION_FILE" ]]; then
-        local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-    else
-        echo -e "${E} Local version file not found.${RT}"
-        log_error "Local version file not found"
-        return 1
-    fi
-    
-    echo -e "${LB}  +  Checking for updates...${RT}"
-    echo -e ""
-    echo -e "  ${DIM}Current version: $local_version${RT}"
-    
-    # Get remote version
-    if ! command -v curl &> /dev/null; then
-        echo -e "  |  ${RED}✗${RT} curl not found"
-        echo -e "${E} curl not found. Cannot check for updates.${RT}"
-        log_error "curl not found"
-        return 1
-    fi
-    
-    remote_version=$(curl -s --connect-timeout 5 --max-time 10 \
-        "https://raw.githubusercontent.com/yonasuriv/sonda/refs/heads/main/VERSION" \
-        2>/dev/null | tr -d '\n\r ' || echo "")
-    
-    if [[ -z "$remote_version" ]]; then
-        echo -e "${E} Failed to retrieve remote version.${RT}"
-        log_error "Failed to retrieve remote version"
-        return 1
-    fi
-    
-    echo -e "     ${DIM}Remote version: $remote_version${RT}"
-    echo -e ""
-    
-    # Compare versions
-    if [[ "$local_version" == "$remote_version" ]]; then
-        echo -e "${LB}${S} ${GREEN}Already up to date. You are running the latest version ($local_version)${RT}${LB}"
-        log_info "Update check: already up to date"
-        return 0
-    fi
-    
-    # Update available
-    echo -e "  |  ${YELLOW}⚠${RT} Update available: $local_version → $remote_version"
-    echo -e "  | "
-    echo -e "  +  Updating Sonda...${RT}"
-    
-    # Check if it's a git repository
-    if [[ ! -d "$INSTALLDIR/.git" ]]; then
-        echo -e "  |  ${RED}✗${RT} Installation directory is not a git repository"
-        echo -e "  |  ${DIM}Please reinstall using: sudo ./SETUP.sh --install${RT}"
-        echo -e "${E} Cannot update: not a git repository${RT}"
-        log_error "Update failed: not a git repository"
-        return 1
-    fi
-    
-    # Check for git command
-    if ! command -v git &> /dev/null; then
-        echo -e "  |  ${RED}✗${RT} git not found"
-        echo -e "${E} git not found. Cannot update.${RT}"
-        log_error "git not found"
-        return 1
-    fi
-    
-    echo -e "  |  ${DIM}Using git to update...${RT}"
-    
-    # Configure git safe directory
-    git config --global --add safe.directory "$INSTALLDIR" 2>/dev/null || true
-    
-    # Change to installation directory
-    cd "$INSTALLDIR" || {
-        echo -e "${E} Cannot access installation directory${RT}"
-        log_error "Cannot access installation directory: $INSTALLDIR"
-        return 1
-    }
-    
-    # Fetch and pull updates
-    if git fetch origin main &>/dev/null; then
-        if git pull origin main &>/dev/null; then
-            # Verify update
-            local new_version
-            if [[ -f "$VERSION_FILE" ]]; then
-                new_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
-            else
-                new_version="unknown"
-            fi
-            
-            if [[ "$new_version" != "$local_version" ]]; then
-                echo -e "  |  ${GREEN}✓${RT} Updated successfully: $local_version → $new_version"
-                echo -e "${LB}${S} ${GREEN}Update complete!${RT}${LB}"
-                log_info "Update successful: $local_version -> $new_version"
-                return 0
-            else
-                echo -e "  |  ${YELLOW}⚠${RT} Update completed but version unchanged"
-                echo -e "${LB}${S} ${GREEN}Update complete${RT}${LB}"
-                log_info "Update completed (version unchanged)"
-                return 0
-            fi
-        else
-            echo -e "  |  ${RED}✗${RT} Git pull failed"
-            echo -e "${E} Update failed. Please try again later.${RT}"
-            log_error "Git pull failed"
-            return 1
-        fi
-    else
-        echo -e "  |  ${RED}✗${RT} Git fetch failed"
-        echo -e "${E} Update failed. Check your internet connection.${RT}"
-        log_error "Git fetch failed"
-        return 1
-    fi
-}
 
 # Remember to update any changes below accordingly in the help manual under lib/man
 
@@ -463,8 +298,8 @@ fi
 # Check if no arguments are provided (default to sys command)
 if [[ $# -eq 0 ]]; then
     log_info "No arguments provided, showing default menu"
-    if type logo_sonda_script &>/dev/null; then
-        logo_sonda_script
+    if type banner_logo_small &>/dev/null; then
+        banner_logo_small
     fi
     if [[ -f "$DEFAULT" ]]; then
         source "$DEFAULT"
@@ -593,83 +428,17 @@ while [[ $# -gt 0 ]]; do
             esac
             continue
             ;;
-        
-        # Meta commands
-        --update)
-            log_info "Checking for updates (--update)"
-            echo ""
-            check_version_only
-            exit_code=$?
-            echo ""
-            exit $exit_code
-            ;;
-        
-        --upgrade)
-            log_info "Updating Sonda (--upgrade)"
-            perform_update
-            exit $?
-            ;;
-        
-        --version)
-            log_info "Checking version (--version)"
-            check_version_only
-            exit 0
-            ;;
-        
-        --recommends)
-            log_info "Showing system recommendations (--recommends)"
-            # system_recommended is in lib/logic (already sourced)
-            if ! type system_recommended &>/dev/null; then
-                echo -e "${E} system_recommended function not found in lib/logic.${RT}" >&2
-                log_error "system_recommended function not found"
-                exit 1
-            fi
-            
-            if ! command -v inxi &>/dev/null; then
-                echo -e "${E} inxi not found. Please install it: ${CYAN}sudo apt install inxi${RT}" >&2
-                log_error "inxi command not found"
-                exit 1
-            fi
-            
-            if type system_recommended &>/dev/null; then
-                system_recommended 2>&1 || {
-                    local exit_code=$?
-                    if [[ $exit_code -ne 0 ]]; then
-                        echo -e "${W} System recommendations check completed with warnings.${RT}" >&2
-                        log_warn "system_recommended exited with code $exit_code"
-                    fi
-                }
-            else
-                echo -e "${E} system_recommended function not available.${RT}" >&2
-                log_error "system_recommended function not found after sourcing"
-                exit 1
-            fi
-            exit 0
-            ;;
-        
-        --banner)
-            log_info "Showing banner (--banner)"
-            if type logo_sonda_script &>/dev/null; then
-                logo_sonda_script
-            elif type logo_sonda_sysnet &>/dev/null; then
-                logo_sonda_sysnet
-            else
-                echo -e "${W} Banner function not available.${RT}" >&2
-            fi
-            exit 0
-            ;;
+
         
         -h|--help)
-            log_info "Showing check mode help"
-            if type logo_sonda_sysnet &>/dev/null; then
-                logo_sonda_sysnet
+            log_info "Showing scan mode help"
+            if type banner_logo_small &>/dev/null; then
+                banner_logo_small
             fi
-            if [[ -f "$USAGE" ]]; then
-                PRINT_USAGE=$(cat "$USAGE")
-                echo -e "$PRINT_USAGE"
+            if [[ -f "${PRINT_HELP:-}" ]]; then
+                bash "$PRINT_HELP" check
             else
-                echo "Usage information not available." >&2
-                log_error "Usage file not found: $USAGE"
+                echo "Help system not available" >&2
             fi
             exit 0
             ;;

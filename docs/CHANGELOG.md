@@ -2,6 +2,35 @@
 
 All notable changes to Sonda will be documented in this file.
 
+## [2.0.1] - 2026-01-14
+
+### Fixed
+- **Help System Routing**: Fixed help command routing issues
+  - `sonda --help` now correctly shows main help
+  - `sonda help check` and `sonda help scan` now correctly show check/scan help
+  - `sonda help audit` now correctly shows audit help
+  - Added "scan" as alias for "check" in help system
+  - Separated `help` command from `-h|--help` flags for proper topic routing
+- **Audit Boot Mode**: Fixed critical issues preventing audit boot from running
+  - Fixed `check_sudo_requirements` and `cleanup_sudo` function not found errors
+  - Updated `PROMPT_SUDO` path from `$COMMON_DIR/sudo.sh` to `$UTILS_DIR/sudo.sh`
+  - Added fallback sourcing for `sudo.sh` in boot init script
+  - Fixed phase module loading by setting `AUDIT_MODULES` to boot modules directory
+  - Fixed unbound variable errors for `AUDIT_CURRENT_PHASE` using `${AUDIT_CURRENT_PHASE:-}` pattern
+  - Fixed loader path to use `$AUDIT_HELPERS/loader.sh` instead of `$AUDIT_LIB/loader.sh`
+- **Banner Functions**: Fixed banner display issues
+  - All three help commands now show appropriate banners/logos
+  - Main help shows big logo (`logo_sonda_sysnet`)
+  - Mode-specific help shows small banner (`banner_logo_small`)
+  - Added banner to audit mode help display
+
+### Changed
+- **Help System**: Improved help command handling
+  - `help` is now a standalone command that accepts topic arguments
+  - Help topics: main, audit, check/scan, utils
+  - Each mode's `--help` flag shows mode-specific help with appropriate banner
+- **Sudo Helper Location**: Moved `sudo.sh` reference from `$COMMON_DIR` to `$UTILS_DIR` in config
+
 ## [2.0.0] - 2026-01-13
 
 ### Major Changes

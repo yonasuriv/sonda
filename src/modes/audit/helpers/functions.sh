@@ -72,7 +72,7 @@ pass() {
     fi
     ((AUDIT_PASSED++))
     # Update current phase counter if tracking
-    if [[ -n "$AUDIT_CURRENT_PHASE" ]]; then
+    if [[ -n "${AUDIT_CURRENT_PHASE:-}" ]]; then
         ((AUDIT_PHASE_PASSED[$AUDIT_CURRENT_PHASE]++))
     fi
 }
@@ -91,7 +91,7 @@ fail() {
     fi
     ((AUDIT_FAILED++))
     # Update current phase counter if tracking
-    if [[ -n "$AUDIT_CURRENT_PHASE" ]]; then
+    if [[ -n "${AUDIT_CURRENT_PHASE:-}" ]]; then
         ((AUDIT_PHASE_FAILED[$AUDIT_CURRENT_PHASE]++))
     fi
 }
@@ -112,7 +112,7 @@ warn() {
     fi
     ((AUDIT_WARNINGS++))
     # Update current phase counter if tracking
-    if [[ -n "$AUDIT_CURRENT_PHASE" ]]; then
+    if [[ -n "${AUDIT_CURRENT_PHASE:-}" ]]; then
         ((AUDIT_PHASE_WARNINGS[$AUDIT_CURRENT_PHASE]++))
     fi
 }
@@ -131,7 +131,7 @@ skip() {
     fi
     ((AUDIT_SKIPPED++))
     # Update current phase counter if tracking
-    if [[ -n "$AUDIT_CURRENT_PHASE" ]]; then
+    if [[ -n "${AUDIT_CURRENT_PHASE:-}" ]]; then
         ((AUDIT_PHASE_SKIPPED[$AUDIT_CURRENT_PHASE]++))
     fi
 }

@@ -14,9 +14,9 @@ get_script_dir() {
 
 # Get project root directory
 get_project_root() {
-    # If INSTALLDIR is set (from main sonda script), use it
-    if [[ -n "${INSTALLDIR:-}" && -d "$INSTALLDIR" ]]; then
-        echo "$INSTALLDIR"
+    # If INSTALL_DIR is set (from main sonda script), use it
+    if [[ -n "${INSTALL_DIR:-}" && -d "$INSTALL_DIR" ]]; then
+        echo "$INSTALL_DIR"
         return 0
     fi
     
@@ -63,8 +63,8 @@ if [[ -n "${AUDIT_LIB:-}" ]]; then
     AUDIT_MODULES_DIR="${AUDIT_MODULES:-$AUDIT_MODE_MODULES_DIR}"
     AUDIT_DOCS_DIR="${AUDIT_DOCS:-$AUDIT_MODE_DOCS_DIR}"
     AUDIT_CONFIG_DIR="${AUDIT_DIR:-$AUDIT_MODE_DIR}"
-    AUDIT_PROJECT_ROOT="${AUDIT_PROJECT_ROOT:-$INSTALLDIR}"
-    AUDIT_SRC_DIR="${AUDIT_SRC_DIR:-$INSTALLDIR}"
+    AUDIT_PROJECT_ROOT="${AUDIT_PROJECT_ROOT:-$INSTALL_DIR}"
+    AUDIT_SRC_DIR="${AUDIT_SRC_DIR:-$INSTALL_DIR}"
 else
     # Fallback: calculate paths if sonda.conf wasn't loaded
     if [[ -z "${AUDIT_PROJECT_ROOT:-}" ]]; then

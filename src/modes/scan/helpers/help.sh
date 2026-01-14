@@ -1,5 +1,4 @@
-#!/bin/bash
-
+[SCAN MODE]
 Usage:
         sonda -C <command>
         sonda -C -T <target> [flags]

@@ -15,101 +15,187 @@ else
     HOMEUSER="${HOME:-$HOME}"
 fi
 
-# Determine installation directory
-# Priority: 1. Environment variable, 2. Source directory, 3. System-wide (/usr/share/sonda), 4. User local
-if [[ -n "${SONDA_INSTALL_DIR:-}" ]]; then
-    INSTALLDIR="$SONDA_INSTALL_DIR"
-elif [[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/core/sonda.conf" ]]; then
-    # Running from source directory (check this first to avoid false matches)
-    INSTALLDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    # VERSION file is at project root, not in src/
-    if [[ -f "$(dirname "$INSTALLDIR")/VERSION" ]]; then
-        export VERSION_FILE="$(cd "$(dirname "$INSTALLDIR")" && pwd)/VERSION"
-    fi
-elif [[ -d "/usr/share/sonda" ]] && [[ -f "/usr/share/sonda/lib/core/sonda.conf" ]]; then
-    # System-wide installation (Debian package)
-    INSTALLDIR="/usr/share/sonda"
-else
-    # Fallback to user local (legacy)
-    INSTALLDIR="$HOMEUSER/.local/share/sonda"
-fi
+# meta: bash. purpose=find-config-recursive. version=1
+#ROOT_DIR="$PWD/src"; find "$ROOT_DIR" -type f -name 'sonda.conf' -print
+SONDA_CONFIG_NAME="config.sh"
+SONDA_CONFIG_PATH="src/lib/core/$SONDA_CONFIG_NAME"
+
+# Resolve the real script location (handles symlinks, PATH execution)
+_script_path="$(realpath -e -- "${BASH_SOURCE[0]}")"
+_script_dir="$(dirname -- "$_script_path")"
+
+# Determine installation directory or if it was run as a binary and source the config file
+case "$_script_dir" in
+  /usr/bin|/usr/sbin|/bin|/sbin)
+     INSTALL_DIR="/usr/share/sonda"
+     CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+    ;;
+    "$HOME/.local/bin"|"$HOME/.local/sbin")
+     INSTALL_DIR="$HOME/.local/share/sonda"
+     CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+    ;;
+  *)
+    # Fallback - running from source
+    _script_dir="$(realpath -e -- "$(dirname -- "$_script_path")/../..")"
+    INSTALL_DIR="$_script_dir"
+    CFG_FILE="$INSTALL_DIR/$SONDA_CONFIG_PATH"
+    ;;
+esac
 
 # Initialize logging early - define fallback functions first
-log_error() { echo "[ERROR] $*" >&2; }
-log_warn() { echo "[WARN] $*" >&2; }
-log_info() { :; }
 log_debug() { :; }
+log_error() { echo -e "${RED}[ERROR]${RT} $*" >&2; }
+log_warn()  { echo -e "${YELLOW}[WARN]${RT} $*" >&2; }
+log_info()  { :; }
 
-# Try to source actual logger if available (will use config variables after sonda.conf loads)
-# For now, just set up fallback functions - actual logger will be sourced by mode scripts
-
-# Check if installation directory exists
-if [[ ! -d "$INSTALLDIR" ]]; then
-    echo "Error: Sonda is not installed or installation directory not found: $INSTALLDIR" >&2
-    echo "Please run: sudo ./SETUP.sh --install" >&2
-    exit 1
+# Source config file
+if [[ -r "${CFG_FILE:-}" ]]; then
+  # shellcheck disable=SC1090
+  source "$CFG_FILE" 
+else
+  printf 'Sonda config file not found or not readable: %s\n' "${CFG_FILE:-}" >&2
+  exit 2
 fi
 
 # Script initialization - export variables
 set -a
 
-# CORE PATHS (exported for use by mode scripts)
-export INSTALLDIR
+# Export INSTALL_DIR before calling load_sonda_config
+export INSTALL_DIR
 export HOMEUSER
 
-# Version file is now in root directory (set above if from source, otherwise here)
-if [[ -z "${VERSION_FILE:-}" ]]; then
-    export VERSION_FILE="$INSTALLDIR/VERSION"
-fi
-
-# ASSETS (shared across modes)
-export ASSETS="$INSTALLDIR/assets"
-
-# MODE PATHS (defined once, reused - needed before sourcing sonda.conf)
-export MODES_DIR="$INSTALLDIR/modes"
-export CHECK_MODE_DIR="$MODES_DIR/check"
-export AUDIT_MODE_DIR="$MODES_DIR/audit"
-export SHARED_LIB_DIR="$INSTALLDIR/lib"
-export SHARED_CORE_DIR="$SHARED_LIB_DIR/core"
-
-# Source master configuration file and load config
-SONDA_CONF="$SHARED_CORE_DIR/sonda.conf"
-if [[ -f "$SONDA_CONF" ]]; then
-    source "$SONDA_CONF" 2>/dev/null || log_warn "Failed to source sonda.conf"
-    # Call the function to load and export all config variables
+# Load config to get all variables including STYLE_FILE
+if [[ "$(type -t load_sonda_config)" == "function" ]]; then
     load_sonda_config
 else
-    log_error "Master configuration file not found: $SONDA_CONF"
+    log_error "load_sonda_config function not found in $CFG_FILE"
     exit 1
 fi
 
-# Mode script paths
-export CHECK_CLI="$CHECK_MODE_DIR/cli.sh"
-export AUDIT_CLI="$AUDIT_MODE_DIR/cli.sh"
+# Source style file after config is loaded
+if [[ -r "${STYLE_FILE:-}" ]]; then
+  # shellcheck disable=SC1090
+  source "$STYLE_FILE" 
+else
+  printf 'Sonda style file not found or not readable: %s\n' "${STYLE_FILE:-}" >&2
+  exit 2
+fi
 
-# Log initialization
-log_info "Sonda started with arguments: $*"
+# Source banner functions
+if [[ -r "${BANNER_FILE:-}" ]]; then
+  # shellcheck disable=SC1090
+  source "${BANNER_FILE}"
+fi
 
-# Improved log file location (using XDG standard)
-export LOGFILE_DIR="$HOMEUSER/.logs/sonda"
-mkdir -p "$LOGFILE_DIR" 2>/dev/null || true
-export LOGFILE="$LOGFILE_DIR/system_$(date +%Y%m%d_%H%M%S).log"
+# Source updater functions
+if [[ -r "${UTILS_DIR:-}/updater.sh" ]]; then
+  # shellcheck disable=SC1090
+  source "${UTILS_DIR}/updater.sh"
+fi
 
 set +a
 
 # Parse command line arguments for mode selection
-MODE="check"  # Default mode
+MODE=""  # No mode set initially
 ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -C|--check)
+        scan|check|info)
             MODE="check"
             shift
             ;;
-        -A|--audit)
+        audit)
             MODE="audit"
             shift
+            ;;
+        help)
+            # Handle 'help' command with optional topic
+            if type logo_sonda_sysnet &>/dev/null; then
+                logo_sonda_sysnet
+            fi
+            if [[ -f "${PRINT_HELP:-}" ]]; then
+                # If there's a next argument, use it as the topic, otherwise default to main
+                help_topic="${2:-main}"
+                bash "$PRINT_HELP" "$help_topic"
+                # Consume the topic argument if it exists
+                [[ -n "${2:-}" ]] && shift
+            else
+                echo "Help system not available" >&2
+            fi
+            exit 0
+            ;;
+        -v|--version)
+            log_info "Checking version (--version)"
+            get_version
+            exit 0
+            ;;
+            
+        --update)
+            log_info "Checking for updates (--update)"
+            echo ""
+            get_update
+            exit_code=$?
+            echo ""
+            exit $exit_code
+            ;;
+        
+        --upgrade)
+            log_info "Updating Sonda (--upgrade)"
+            perform_upgrade
+            exit $?
+            ;;
+        
+        --recommends)
+            log_info "Showing system recommendations (--recommends)"
+            # system_recommended is in lib/logic (already sourced)
+            if ! type system_recommended &>/dev/null; then
+                echo -e "${E} system_recommended function not found in lib/logic.${RT}" >&2
+                log_error "system_recommended function not found"
+                exit 1
+            fi
+            
+            if ! command -v inxi &>/dev/null; then
+                echo -e "${E} inxi not found. Please install it: ${CYAN}sudo apt install inxi${RT}" >&2
+                log_error "inxi command not found"
+                exit 1
+            fi
+            
+            if type system_recommended &>/dev/null; then
+                system_recommended 2>&1 || {
+                    local exit_code=$?
+                    if [[ $exit_code -ne 0 ]]; then
+                        echo -e "${W} System recommendations check completed with warnings.${RT}" >&2
+                        log_warn "system_recommended exited with code $exit_code"
+                    fi
+                }
+            else
+                echo -e "${E} system_recommended function not available.${RT}" >&2
+                log_error "system_recommended function not found after sourcing"
+                exit 1
+            fi
+            exit 0
+            ;;
+
+        -h|--help)
+            # If a mode was already set, pass help to that mode
+            # Otherwise show main help
+            if [[ -n "$MODE" ]]; then
+                # Pass help to the mode script
+                ARGS+=("$1")
+                shift
+            else
+                # Show main help
+                if type logo_sonda_sysnet &>/dev/null; then
+                    logo_sonda_sysnet
+                fi
+                if [[ -f "${PRINT_HELP:-}" ]]; then
+                    bash "$PRINT_HELP" main
+                else
+                    echo "Help system not available" >&2
+                fi
+                exit 0
+            fi
             ;;
         *)
             # Not a mode flag, add to args
@@ -124,30 +210,32 @@ done
 case "$MODE" in
     check)
         # Check mode
-        if [[ -f "$CHECK_CLI" ]]; then
-            source "$CHECK_CLI" "${ARGS[@]}"
+        if [[ -f "${SCAN_CLI:-}" ]]; then
+            source "$SCAN_CLI" "${ARGS[@]}"
             exit $?
         else
-            echo "Error: Check mode script not found: $CHECK_CLI" >&2
+            echo "Error: Check mode script not found: ${SCAN_CLI:-}" >&2
             log_error "Check mode script not found"
             exit 1
         fi
         ;;
     audit)
         # Audit mode
-        if [[ -f "$AUDIT_CLI" ]]; then
+        if [[ -f "${AUDIT_CLI:-}" ]]; then
             source "$AUDIT_CLI" "${ARGS[@]}"
             exit $?
         else
-            echo "Error: Audit mode script not found: $AUDIT_CLI" >&2
+            echo "Error: Audit mode script not found: ${AUDIT_CLI:-}" >&2
             log_error "Audit mode script not found"
             exit 1
         fi
         ;;
+
     *)
         # Unknown mode, default to check
-        if [[ -f "$CHECK_CLI" ]]; then
-            source "$CHECK_CLI" "${ARGS[@]}"
+        MODE="check"
+        if [[ -f "${SCAN_CLI:-}" ]]; then
+            source "$SCAN_CLI" "${ARGS[@]}"
             exit $?
         else
             echo "Error: Check mode not available" >&2

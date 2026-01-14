@@ -1,101 +1,4 @@
-#!/usr/bin/env bash
-
-# Boot Session Auditor Script
-# Main entry point - loads modular components and runs phase-driven audits
-
-# Core paths are already set by main sonda script
-# INSTALLDIR, HOMEUSER, VERSION_FILE, ASSETS, LOGFILE_DIR, LOGFILE are exported
-# MODES_DIR, AUDIT_MODE_DIR, SHARED_CORE_DIR are also exported
-
-# Start timer
-AUDIT_START_TIME=$(date +%s.%N)
-
-# Use exported paths from sonda.conf (already exported by main script)
-# All paths are now defined in sonda.conf
-AUDIT_DIR="$AUDIT_MODE_DIR"
-SCRIPT_DIR="$AUDIT_SCRIPT_DIR"
-PROJECT_ROOT="$AUDIT_PROJECT_ROOT"
-SRC_DIR="$AUDIT_SRC_DIR"
-
-LIB="$AUDIT_LIB"
-SHARED_CORE="$SONDA_SHARED_CORE"
-MODULES="$AUDIT_MODULES"
-CONFIG="$AUDIT_CONFIG"
-
-# Load default configuration if it exists (before parsing arguments)
-# This allows default.conf to set defaults that can be overridden by command line
-# shellcheck disable=SC1091
-if [[ -f "$AUDIT_DIR/default.conf" ]]; then
-    # shellcheck source=src/modes/audit/default.conf
-    source "$AUDIT_DIR/default.conf" 2>/dev/null || true
-fi
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --save-logs|--log)
-            export AUDIT_SAVE_LOGS=true
-            shift
-            ;;
-        --log-dir|-d)
-            export AUDIT_LOG_DIR="$2"
-            shift 2
-            ;;
-        -v|--verbose)
-            export AUDIT_VERBOSE=true
-            shift
-            ;;
-        -s|--silent)
-            export AUDIT_VERBOSE=false
-            shift
-            ;;
-        -t|--timestamp)
-            export AUDIT_ADD_TIMESTAMP=true
-            export AUDIT_LOG_TIMESTAMP=true
-            export AUDIT_CONSOLE_TIMESTAMP=true
-            shift
-            ;;
-        -nt|--no-timestamp)
-            export AUDIT_ADD_TIMESTAMP=false
-            export AUDIT_LOG_TIMESTAMP=false
-            export AUDIT_CONSOLE_TIMESTAMP=false
-            shift
-            ;;
-        -u|--user)
-            export AUDIT_ADD_USER=true
-            export AUDIT_LOG_USER=true
-            export AUDIT_CONSOLE_USER=true
-            shift
-            ;;
-        -a|--no-user)
-            export AUDIT_ADD_USER=false
-            export AUDIT_LOG_USER=false
-            export AUDIT_CONSOLE_USER=false
-            shift
-            ;;
-        --help|-h)
-            echo "Usage: $0 [OPTIONS]"
-            echo "Options:"
-            echo "  --save-logs, --log  Save detailed logs to ./logs directory"
-            echo "  --log-dir, -d DIR   Specify custom log directory (default: ./logs)"
-            echo "  -v, --verbose       Show detailed information on terminal (default: silent)"
-            echo "  -s, --silent        Hide detailed info from terminal, not logs (default)"
-            echo "  -t, --timestamp     Add timestamp to log filenames"
-            echo "  -nt, --no-timestamp Remove timestamp from log filenames (default)"
-            echo "  -u, --user          Add username to log filenames"
-            echo "  -a, --no-user       Hide username from log filenames (default)"
-            echo "  --help, -h          Show this help message"
-            echo ""
-            echo "Default behavior: -s -nt -a (silent output, no timestamp, no user)"
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
+#!/bin/bash
 
 # Initialize core system
 # Set project root before loading init so paths resolve correctly
@@ -112,13 +15,56 @@ export AUDIT_ADD_USER=${AUDIT_ADD_USER:-${AUDIT_LOG_USER:-false}}
 
 # shellcheck disable=SC1091  # Dynamic source path
 # Use AUDIT_LIB from sonda.conf (already exported)
-AUDIT_INIT="$AUDIT_LIB/init.sh"
-if [[ -f "$AUDIT_INIT" ]]; then
-    source "$AUDIT_INIT"
-else
-    echo "Error: Cannot find init.sh at $AUDIT_INIT" >&2
-    exit 1
+
+# Load core components in order
+source "$AUDIT_HELPERS/paths.sh"
+source "$AUDIT_HELPERS/config.sh"
+source "$AUDIT_HELPERS/commands.sh"
+source "$AUDIT_HELPERS/phases.sh"
+source "$AUDIT_HELPERS/filter.sh"
+source "$AUDIT_HELPERS/functions.sh"
+source "$AUDIT_HELPERS/layout.sh"
+
+# Source sudo.sh - check common location first, then local
+if [[ -f "${PROMPT_SUDO:-}" ]]; then
+    source "$PROMPT_SUDO"
+elif [[ -f "$UTILS_DIR/sudo.sh" ]]; then
+    source "$UTILS_DIR/sudo.sh"
+elif [[ -f "$AUDIT_HELPERS/sudo.sh" ]]; then
+    source "$AUDIT_HELPERS/sudo.sh"
 fi
+source "$AUDIT_HELPERS/summary.sh"
+
+# Initialize logging if requested
+init_logging() {
+    if [[ "$AUDIT_SAVE_LOGS" == true ]]; then
+        mkdir -p "$AUDIT_LOG_DIR"
+        
+        # Build log filename based on LOG settings (not console settings)
+        LOG_BASENAME="boot_audit"
+        if [[ "${AUDIT_LOG_TIMESTAMP:-$AUDIT_ADD_TIMESTAMP}" == true ]]; then
+            LOG_BASENAME="${LOG_BASENAME}_${AUDIT_TIMESTAMP}"
+        fi
+        if [[ "${AUDIT_LOG_USER:-$AUDIT_ADD_USER}" == true ]]; then
+            LOG_BASENAME="${LOG_BASENAME}_$(whoami)"
+        fi
+        
+        AUDIT_LOG_FILE="$AUDIT_LOG_DIR/${LOG_BASENAME}.log"
+        AUDIT_DETAILED_LOG="$AUDIT_LOG_DIR/${LOG_BASENAME}_detailed.log"
+        touch "$AUDIT_LOG_FILE" "$AUDIT_DETAILED_LOG"
+        echo "=== Boot Session Audit - $(date) ===" > "$AUDIT_LOG_FILE"
+        echo "=== Detailed Boot Session Audit - $(date) ===" > "$AUDIT_DETAILED_LOG"
+        if [[ "${AUDIT_LOG_USER:-$AUDIT_ADD_USER}" == true ]]; then
+            echo "User: $(whoami)" >> "$AUDIT_LOG_FILE"
+            echo "User: $(whoami)" >> "$AUDIT_DETAILED_LOG"
+        fi
+        
+        export AUDIT_LOG_FILE AUDIT_DETAILED_LOG
+    fi
+}
+
+# Set trap to cleanup on exit
+trap cleanup_sudo EXIT
 
 # Initialize logging
 init_logging
@@ -141,7 +87,7 @@ fi
 
 # Load and execute all phase modules
 # Use AUDIT_LIB from sonda.conf (preferred) or AUDIT_LIB_DIR from paths.sh (fallback)
-AUDIT_LOADER="${AUDIT_LIB:-$AUDIT_LIB_DIR}/loader.sh"
+AUDIT_LOADER="${AUDIT_HELPERS}/loader.sh"
 # shellcheck disable=SC1091,SC2153  # Dynamic source path
 if [[ -f "$AUDIT_LOADER" ]]; then
     source "$AUDIT_LOADER"
@@ -149,6 +95,13 @@ else
     echo "Error: Cannot find loader.sh at $AUDIT_LOADER" >&2
     exit 1
 fi
+
+# Set boot modules directory for phase loading
+BOOT_MODULES_DIR="${AUDIT_MODULES}/boot"
+export AUDIT_MODULES="$BOOT_MODULES_DIR"
+
+# Initialize AUDIT_CURRENT_PHASE to avoid unbound variable errors
+export AUDIT_CURRENT_PHASE=""
 
 # Run all phases
 load_all_phases

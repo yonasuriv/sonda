@@ -39,6 +39,7 @@ packagng/debian/*.debhelper
 packagng/debian/*.log
 packagng/debian/debhelper-build-stamp
 packagng/debian/sonda.substvars
+
 # Built packages and distribution directory
 *.deb
 *.buildinfo
@@ -66,3 +67,5 @@ logs/
 *.bak
 *.orig
 
+# Misc
+tests/

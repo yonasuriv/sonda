@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #####################################################################################
-echo -e "[┬] ${WHITE2}System Information ${RT}     $net_status $sys_status"  ##
+echo -e "[┬] ${WHITE2}System Information ${RT}     $net_status $sys_status"        ##
 #####################################################################################
 echo -e " |  "
 echo -e "$update_recommended $(calculate_time_since_last_update) since the last system update."
@@ -27,7 +27,7 @@ echo -e " |  System Identifier:      BOOT ID: $boot_id, MACHINE ID: $machine_id$
 echo -e " |  "
 
 #####################################################################################
-echo -e "[┬] ${WHITE2}System Performance ${RT}"                           ##
+echo -e "[┬] ${WHITE2}System Performance ${RT}"                                    ##
 #####################################################################################
 echo -e " |  "
 echo -e "$restart_recommended $formatted_uptime since the last reboot."
