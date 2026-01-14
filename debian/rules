@@ -114,8 +114,8 @@ override_dh_auto_install:
 	# Install icon
 	mkdir -p debian/sonda/usr/share/pixmaps
 	cp assets/icons/sonda.png debian/sonda/usr/share/pixmaps/
-	# Install version file to root of installation
-	cp VERSION debian/sonda/usr/share/sonda/version
+	# Install version file to root of installation (uppercase VERSION to match code expectations)
+	cp VERSION debian/sonda/usr/share/sonda/VERSION
 
 # No Python package to process - all Python deps are in Depends
 

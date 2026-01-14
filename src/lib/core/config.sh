@@ -51,7 +51,21 @@ load_sonda_config() {
 
     CFG_FILE="$CORE_DIR/config.sh"
     STYLE_FILE="$CORE_DIR/style.sh"
-    VERSION_FILE="$SONDA_DIR/VERSION"
+    # VERSION file location: check both uppercase and lowercase for compatibility
+    # When installed: /usr/share/sonda/VERSION
+    # When running from source: $INSTALL_DIR/VERSION (project root)
+    if [[ -f "$SONDA_DIR/VERSION" ]]; then
+        VERSION_FILE="$SONDA_DIR/VERSION"
+    elif [[ -f "$SONDA_DIR/version" ]]; then
+        VERSION_FILE="$SONDA_DIR/version"
+    elif [[ -f "$INSTALL_DIR/VERSION" ]]; then
+        VERSION_FILE="$INSTALL_DIR/VERSION"
+    elif [[ -f "$INSTALL_DIR/version" ]]; then
+        VERSION_FILE="$INSTALL_DIR/version"
+    else
+        # Default expectation: uppercase VERSION
+        VERSION_FILE="$SONDA_DIR/VERSION"
+    fi
     #BANNER_FILE="$UTILS_DIR/banner.sh" > moved to style.sh
     #LOGGER_FILE="$UTILS_DIR/logger.sh" > not created yet
 

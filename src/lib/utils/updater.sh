@@ -3,11 +3,15 @@
 # Check local version only (local)
 
 get_version() {
-    if [[ -f "$VERSION_FILE" ]]; then
+    local local_version
+    if [[ -f "${VERSION_FILE:-}" ]]; then
         local_version=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\n\r ' || echo "unknown")
+        echo -e "${S} ${BLUE}Sonda version${RT} ${GREEN}$local_version${RT}"
+        log_info "Version: $local_version"
+        return 0
     else
         echo -e "${E} Local version file not found.${RT}" >&2
-        log_error "Local version file not found: $VERSION_FILE"
+        log_error "Local version file not found: ${VERSION_FILE:-<unset>}"
         return 1
     fi
 }
