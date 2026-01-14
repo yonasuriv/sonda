@@ -60,7 +60,7 @@ package:
 install-package:
 	@echo ""
 	@echo "Installing package..."
-	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -n "$$deb_file" ]; then sudo dpkg -i "$$deb_file"; else echo "Error: No .deb package found in $(DIST_DIR)"; exit 1; fi'
+	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -z "$$deb_file" ]; then deb_file=$$(find .. -maxdepth 1 -name "sonda_$(DEB_VERSION)_all.deb" -type f 2>/dev/null | head -1); fi; if [ -n "$$deb_file" ]; then echo "Installing: $$deb_file"; sudo dpkg -i "$$deb_file" || (echo "Fixing dependencies..."; sudo apt-get install -f -y); else echo "Error: No .deb package found in $(DIST_DIR) or parent directory"; exit 1; fi'
 	@echo "Installation complete!"
 	@echo ""
 
@@ -102,8 +102,12 @@ override_dh_auto_install:
 	mkdir -p debian/sonda/usr/bin
 	cp src/bin/sonda debian/sonda/usr/bin/
 	chmod +x debian/sonda/usr/bin/sonda
-	chmod +x debian/sonda/usr/share/sonda/modes/check/cli.sh
-	chmod +x debian/sonda/usr/share/sonda/modes/audit/cli.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/scan/scan-cli.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/audit/audit-cli.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/audit/modules/boot/init.sh
+	chmod +x debian/sonda/usr/share/sonda/modes/audit/modules/security/init.sh
+	# Make all helper scripts executable
+	find debian/sonda/usr/share/sonda/modes -name "*.sh" -type f -exec chmod +x {} \;
 	# Install desktop file
 	mkdir -p debian/sonda/usr/share/applications
 	cp assets/shortcuts/sonda.desktop debian/sonda/usr/share/applications/
