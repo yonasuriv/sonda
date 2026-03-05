@@ -26,7 +26,16 @@ load_sonda_config() {
     # ROOT LEVEL DIRECTORIES
     ASSETS_DIR="$SONDA_DIR/assets"
     DOCS_DIR="$SONDA_DIR/docs"
-    SRC_DIR="$SONDA_DIR/src"
+
+    # When running from source, modes live under src/modes.
+    # When installed from a .deb, modes live directly under $SONDA_DIR/modes.
+    if [[ -d "$SONDA_DIR/src/modes" ]]; then
+        SRC_DIR="$SONDA_DIR/src"
+        MODES_DIR="$SRC_DIR/modes"
+    else
+        SRC_DIR="$SONDA_DIR"
+        MODES_DIR="$SONDA_DIR/modes"
+    fi
     
     # BINARY DIRECTORY
     BIN_DIR="$SONDA_DIR/bin"
@@ -84,8 +93,8 @@ load_sonda_config() {
     # ============================================================================
     # AUDIT MODE SPECIFIC
     # ============================================================================
-
-    AUDIT_DIR="$SRC_DIR/modes/audit"
+    
+    AUDIT_DIR="$MODES_DIR/audit"
     AUDIT_HELPERS="$AUDIT_DIR/helpers"
     AUDIT_MODULES="$AUDIT_DIR/modules"
 
@@ -96,7 +105,7 @@ load_sonda_config() {
     # SCAN MODE SPECIFIC
     # ============================================================================    
     
-    SCAN_DIR="$SRC_DIR/modes/scan"
+    SCAN_DIR="$MODES_DIR/scan"
     SCAN_HELPERS="$SCAN_DIR/helpers"
     SCAN_MODULES="$SCAN_DIR/modules"
     

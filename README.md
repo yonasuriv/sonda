@@ -1,11 +1,7 @@
-----
-
 <p align="center">
   <!--<img src="https://github.com/user-attachments/assets/b7002b57-9a0a-44ab-9de3-fef44fb56ce0e"/><img src="https://github.com/user-attachments/assets/4e9cad6d-c134-44b1-9bd7-6f0b78b8a41a"/>-->
   <img width="825" height="108" alt="text-1752496235457" src="https://github.com/user-attachments/assets/6e072117-94d2-496e-8710-b140ce7c23da" />
 </p>
-
-----
 
 Sonda is a no-nonsense tool I built to pull together basically everything you’d want from a system info utility on Linux. Uptime, running processes, hardware stats, network configs, package versions — instead of juggling a bunch of separate tools, sonda gives it all to you in one spot.
 
@@ -70,13 +66,13 @@ It also pushes real-time updates straight to your terminal — things like packa
   - Easy to extend if you’ve got custom needs
 
 ## Installation
-To install Sonda, simply clone the repository and run the setup script:
+To install Sonda, simply clone the repository and run the packaging helper:
 
 ```bash
-git clone https://github.com/yonasuriv/sonda && cd sonda && ./deb.sh all
+git clone https://github.com/yonasuriv/sonda && cd sonda && ./install_debian.sh all
 ```
 
-All requirements and dependencies are handled automatically. To uninstall it run `sudo dpkg -r sonda`
+All requirements and dependencies are handled automatically. To uninstall it run `sudo dpkg -r sonda`.
 
 Once installed, you can run Sonda from the terminal:
 

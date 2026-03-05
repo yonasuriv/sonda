@@ -5,6 +5,9 @@ All notable changes to Sonda will be documented in this file.
 ## [2.0.1] - 2026-01-14
 
 ### Fixed
+- **Check Mode Routing After Install**:
+  - Fixed `config.sh` to resolve `SCAN_DIR`/`AUDIT_DIR` based on whether Sonda is running from source (`src/modes/...`) or from an installed package (`/usr/share/sonda/modes/...`).
+  - Prevents `Error: Check mode not available` when running the installed `sonda` binary (e.g. `sonda net`) because `SCAN_CLI` now points to the correct `scan-cli.sh`.
 - **Help System Routing**: Fixed help command routing issues
   - `sonda --help` now correctly shows main help
   - `sonda help check` and `sonda help scan` now correctly show check/scan help
