@@ -3,84 +3,85 @@
   <img width="825" height="108" alt="text-1752496235457" src="https://github.com/user-attachments/assets/6e072117-94d2-496e-8710-b140ce7c23da" />
 </p>
 
-Sonda is a no-nonsense tool I built to pull together basically everything you’d want from a system info utility on Linux. Uptime, running processes, hardware stats, network configs, package versions — instead of juggling a bunch of separate tools, sonda gives it all to you in one spot.
+Sonda is a lightweight, terminal-focused system information toolkit for Linux. It consolidates uptime, running processes, hardware details, network configuration, and package metadata into a single, consistent interface, so you do not need to juggle multiple utilities.
 
-It also pushes real-time updates straight to your terminal — things like package installs, disk usage, memory pressure, CPU spikes, etc. Handy if you're keeping an eye on performance or troubleshooting something live without the fluff.
+Sonda can also stream real-time updates directly to your terminal, including package installation activity, disk usage, memory pressure, CPU utilization, and more. This makes it well suited for performance monitoring and troubleshooting without graphical overhead.
 
 
 
 ## Coverage
 
-- [x] **System Info**
+- [x] **System Information**
 
-  - Pulls CPU, RAM, storage, and full hardware specs
-  - Shows uptime, load averages, and resource pressure in real time
-  - Keeps tabs on memory, disk, and CPU usage while you work
+  - Collects CPU, memory, storage, and detailed hardware specifications.
+  - Reports uptime, load averages, and resource pressure in real time.
+  - Monitors memory, disk, and CPU utilization during normal operation.
 
 - [x] **Network Details**
 
-  - Shows all interfaces, IPs (local + public), MACs, and routes
-  - Lists open ports, active connections, and firewall status
-  - Tracks traffic stats and per-interface info in real time
+  - Displays all interfaces, IP addresses (local and public), MAC addresses, and routes.
+  - Lists open ports, active connections, and firewall status.
+  - Tracks traffic statistics and per-interface information in real time.
 
 - [x] **Package Management**
 
-  - Monitors installed packages and available updates live
-  - Sends alerts when packages are added/updated — system or user
-  - Gives you full version history on everything installed or pending
+  - Monitors installed packages and available updates.
+  - Highlights when packages are added or updated at the system or user level.
+  - Provides version history for installed and pending packages.
 
 - [x] **Live Notifications**
 
-  - Real-time alerts right in your terminal — no bloat, no GUI
-  - Covers system changes, network status, package installs, and more
+  - Sends real-time alerts to the terminal without requiring a graphical interface.
+  - Covers system changes, network state, package activity, and other key events.
 
 - [x] **System Health**
 
-  - Watches CPU, memory, disk space, and uptime 24/7
+  - Watches CPU, memory, disk capacity, and uptime continuously.
 
-- [x] **Process Viewer**
+- [x] **Process Visibility**
 
-  - Displays all running processes and what they’re doing
-  - Lets you catch memory hogs or zombie tasks instantly
+  - Shows active processes and their resource usage.
+  - Helps quickly identify resource-intensive or misbehaving tasks.
 
 - [x] **Real-Time Monitoring**
 
-  - Constantly tracks CPU, RAM, disk, and network performance
+  - Continuously tracks CPU, memory, disk, and network performance metrics.
+
 - [x] **Clean Interface**
 
-  - Everything is readable and sorted — made for the terminal
-  - No fluff, just straight data, formatted for humans
+  - Presents information in a structured, readable layout designed for the terminal.
+  - Focuses on essential data, formatted to be easy to scan.
 
-- [ ] **Output & Logging** _`disabled temp.`_
+- [ ] **Output and Logging** _`temporarily disabled`_
 
-  - Easy to skim or deep dive
-  - Can log to file for later review or automation
+  - Designed for both quick inspection and deeper analysis.
+  - Supports file-based logging for later review or automation when enabled.
 
-- [x] **OS Integration**
+- [x] **Operating System Integration**
 
-  - Hooks into systemd and other core services for better insight
+  - Integrates with systemd and other core services to provide richer context.
 
-- [x] **Modular Setup**
+- [x] **Modular Architecture**
 
-  - Only enable the parts you care about
-  - Easy to extend if you’ve got custom needs
+  - Allows enabling only the components that are relevant to a given workflow.
+  - Designed to be straightforward to extend with additional modules.
 
 ## Installation
-To install Sonda, simply clone the repository and run the packaging helper:
+To install Sonda, clone the repository and run the Debian packaging helper script:
 
 ```bash
 git clone https://github.com/yonasuriv/sonda && cd sonda && ./install_debian.sh all
 ```
 
-All requirements and dependencies are handled automatically. To uninstall it run `sudo dpkg -r sonda`.
+All required dependencies are handled automatically by the packaging process. To uninstall Sonda, run `sudo dpkg -r sonda`.
 
-Once installed, you can run Sonda from the terminal:
+After installation, Sonda is available on the PATH and can be invoked from the terminal:
 
 ```bash
 sonda
 ```
 
-This will provide a comprehensive, real-time overview of your system and network information, depending on the argument passed.
+This command provides a comprehensive, real-time overview of system and network information, depending on the options supplied.
 
 ## Usage
 
@@ -104,12 +105,14 @@ This will provide a comprehensive, real-time overview of your system and network
 
 ## Compatibility
 
-Tested and fully functional on Kali linux, but should be fully compatible with all debian-based GNU/Linux distributions. All dependencies are automatically handled by the Debian package (see `packagng/debian/control`).
+Sonda has been tested and validated on Kali Linux and is intended to be compatible with Debian-based GNU/Linux distributions. All runtime dependencies are managed by the Debian package (see `packaging/debian/control`).
 
-## Support
-To contribute or get support, simply fork the repository and submit your issues or pull requests. 
+## Support and Contributions
 
-All forms of contributions are welcome, from bug fixes to new features and OS compatibility testing.
+To request support or contribute changes, fork the repository and open an issue or pull request.
+
+Contributions of all types are welcome, including bug fixes, new features, and additional distribution compatibility testing.
 
 ## License
-Sonda is open-source software licensed under the MIT License. See the LICENSE file for more details.
+
+Sonda is open-source software licensed under the MIT License. For full details, refer to the `LICENSE` file.
