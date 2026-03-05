@@ -1,0 +1,26 @@
+name: Build Debian package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Debian package
+        run: |
+          chmod +x ./install_debian.sh
+          ./install_debian.sh build
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonda-debian-package
+          path: dist/sonda_*/*.deb
