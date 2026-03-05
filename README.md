@@ -7,8 +7,6 @@ Sonda is a lightweight, terminal-focused system information toolkit for Linux. I
 
 Sonda can also stream real-time updates directly to your terminal, including package installation activity, disk usage, memory pressure, CPU utilization, and more. This makes it well suited for performance monitoring and troubleshooting without graphical overhead.
 
-
-
 ## Coverage
 
 - [x] **System Information**
@@ -82,6 +80,13 @@ sonda
 ```
 
 This command provides a comprehensive, real-time overview of system and network information, depending on the options supplied.
+
+For more convenient access, it is recommended to define shell aliases such as:
+
+```bash
+alias ipconfig='sonda net'
+alias sysinfo='sonda sys'
+```
 
 ## Usage
 
