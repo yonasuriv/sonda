@@ -68,7 +68,7 @@ Sonda can also stream real-time updates directly to your terminal, including pac
 To install Sonda, clone the repository and run the Debian packaging helper script:
 
 ```bash
-git clone https://github.com/yonasuriv/sonda && cd sonda && ./install_debian.sh all
+git clone https://github.com/yonasuriv/sonda /tmp/sonda && cd /tmp/sonda && ./install_debian.sh all
 ```
 
 All required dependencies are handled automatically by the packaging process. To uninstall Sonda, run `sudo dpkg -r sonda`.

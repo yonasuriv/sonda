@@ -31,14 +31,11 @@ MODES
 UTILS
   sys                     Print enhanced system info
   net                     Print enhanced network info
-  update                  Check for updates, show version comparison
-  upgrade                 Upgrade to latest version
-  version                 Print installed version
-  help [topic]            Help topics: main, audit, scan, check, utils
-
-EXAMPLES
-  sonda audit boot -v --save-logs
-  sonda check security -vv
+  
+  --update                  Check for updates, show version comparison
+  --upgrade                 Upgrade to latest version
+  --version                 Print installed version
+  --help [topic]            Help topics: main, audit, scan, check, utils
 EOF
 }
 

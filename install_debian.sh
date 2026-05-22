@@ -9,7 +9,7 @@ set -euo pipefail
 # Runtime dependencies are defined in debian/control
 DEPS=(
   build-essential
-  "debhelper-compat (= 13)"
+  debhelper-compat
   dh-python
   python3-all
   python3-pip
