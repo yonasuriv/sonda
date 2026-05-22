@@ -84,6 +84,9 @@ check_deps() {
   need_cmd apt-get
   need_cmd dpkg-query
   need_cmd dpkg
+  
+  # Temp fix
+  sudo apt install debhelper-compat dh-python python3-all
 
   if ! is_root; then
     if command -v sudo >/dev/null 2>&1; then
