@@ -10,9 +10,7 @@ set -euo pipefail
 DEPS=(
   build-essential
   "debhelper-compat (= 13)"
-  dh-python
   dpkg-dev
-  python3-all
 )
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -28,7 +26,7 @@ is_root() { [[ "${EUID:-$(id -u)}" -eq 0 ]]; }
 
 # Return 0 if dependency is satisfied, else 1.
 # Handles:
-#   - plain package name: "dh-python"
+#   - plain package name: "dpkg-dev"
 #   - versioned: "debhelper-compat (= 13)"
 dep_satisfied() {
   local dep="$1"
@@ -82,7 +80,21 @@ apt_update_once() {
 
 apt_install() {
   local pkgs=("$@")
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${pkgs[@]}"
+  if DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${pkgs[@]}"; then
+    return 0
+  fi
+
+  cat >&2 <<'EOF'
+
+APT failed while fetching build dependencies. Refreshing package indexes and retrying once.
+This commonly fixes rolling-release mirror 404s caused by stale package lists.
+
+EOF
+
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+  apt-get update --fix-missing
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing --no-install-recommends "${pkgs[@]}"
 }
 
 check_deps() {

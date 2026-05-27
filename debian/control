@@ -2,7 +2,7 @@ Source: sonda
 Section: utils
 Priority: optional
 Maintainer: yonasuriv <yonasuriv@users.noreply.github.com>
-Build-Depends: debhelper-compat (= 13), dh-python, python3-all
+Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Homepage: https://github.com/yonasuriv/sonda
 Vcs-Browser: https://github.com/yonasuriv/sonda
