@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Purpose: Fast build and/or install the sonda .deb.
-# Usage: ./dev.sh [build|install|deps|all]
-# Notes: Runs make in current dir. Installs sonda_*.deb via sudo dpkg -i.
+# Usage: ./install_debian.sh [build|install|deps|all]
+# Notes: Builds inside .build/ so package artifacts never land outside the repo.
 
 set -euo pipefail
 
@@ -9,11 +9,16 @@ set -euo pipefail
 # Runtime dependencies are defined in debian/control
 DEPS=(
   build-essential
-  debhelper-compat
+  "debhelper-compat (= 13)"
   dh-python
+  dpkg-dev
   python3-all
-  python3-pip
 )
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+BUILD_ROOT="$SCRIPT_DIR/.build"
+BUILD_SRC="$BUILD_ROOT/sonda-src"
+DIST_ROOT="$SCRIPT_DIR/dist"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -72,7 +77,7 @@ dep_satisfied() {
 
 apt_update_once() {
   # Keep noise down but still useful.
-  apt-get update -y
+  apt-get update
 }
 
 apt_install() {
@@ -84,21 +89,14 @@ check_deps() {
   need_cmd apt-get
   need_cmd dpkg-query
   need_cmd dpkg
-  
-  # Temp fix
-  sudo apt install debhelper-compat dh-python python3-all -y
 
   if ! is_root; then
     if command -v sudo >/dev/null 2>&1; then
-      # If we're being called as part of 'all', don't use exec so we can continue
       if [[ "${ORIGINAL_CMD:-}" == "all" ]]; then
-        # Run check_deps with sudo in a subshell, but don't exec
-        sudo -E bash -c "$(declare -f check_deps dep_satisfied apt_update_once apt_install need_cmd is_root die); check_deps" || die "Failed to check dependencies"
+        sudo -E bash "$0" deps
         return 0
-      else
-        # For standalone 'deps' command, exec is fine
-        exec sudo -E bash "$0" deps
       fi
+      exec sudo -E bash "$0" deps
     fi
     die "Run as root (or install sudo) to check dependencies."
   fi
@@ -164,18 +162,42 @@ EOF
 }
 
 build() {
+  need_cmd dpkg-buildpackage
+  need_cmd tar
+
+  cd "$SCRIPT_DIR"
   make -f debian/rules clean
+
+  rm -rf "$BUILD_SRC"
+  mkdir -p "$BUILD_SRC"
+
+  # dpkg-buildpackage writes output to the parent of the source tree. Building
+  # from a copy under .build keeps every generated file inside this repository.
+  tar \
+    --exclude='./.git' \
+    --exclude='./.build' \
+    --exclude='./build' \
+    --exclude='./dist' \
+    -cf - . | tar -xf - -C "$BUILD_SRC"
+
   echo ""
   echo "Building debian package..."
   echo ""
-  dpkg-buildpackage -us -uc -b
+  (cd "$BUILD_SRC" && dpkg-buildpackage -us -uc -b)
   echo ""
   echo "Package built successfully."
+
+  mkdir -p "$DIST_ROOT"
+  find "$BUILD_ROOT" -maxdepth 1 -type f \
+    \( -name 'sonda_*.deb' -o -name 'sonda_*.buildinfo' -o -name 'sonda_*.changes' \) \
+    -exec cp -a {} "$DIST_ROOT/" \;
+
   make -f debian/rules collect
 }
 
 install() {
   # Use debian/rules install-package target
+  cd "$SCRIPT_DIR"
   make -f debian/rules install-package
 }
 
@@ -190,7 +212,7 @@ case "${1:-}" in
     echo "Commands:" >&2
     echo "  deps     - Check and install build dependencies" >&2
     echo "  build    - Clean and build the .deb package" >&2
-    echo "  install  - Install the built .deb package from dist/ or root" >&2
+    echo "  install  - Install the built .deb package from dist/" >&2
     echo "  all      - Run deps, build, and install (default)" >&2
     exit 2
     ;;

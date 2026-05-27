@@ -5,32 +5,31 @@
 Install build dependencies (minimal set - only what's needed to build):
 
 ```bash
-sudo apt update
-sudo apt install -y build-essential debhelper dh-python python3-all devscripts
+./install_debian.sh deps
 ```
 
 ## Building the Package
 
-### Method 1: Using Makefile (Recommended)
+### Method 1: Using the Helper Script (Recommended)
 
 ```bash
 # Build the package
-make build
+./install_debian.sh build
 
 # Build and install
-make install
+./install_debian.sh all
 
 # Clean build artifacts
-make clean
+make -f debian/rules clean
 ```
 
-### Method 2: Using dpkg-buildpackage
+Build artifacts are kept inside the repository under `.build/` and `dist/`.
+
+### Method 2: Using Debian Rules
 
 ```bash
 # Build the package
-cd packagng && dpkg-buildpackage -us -uc -b
-
-# The .deb file will be created in the parent directory
+make -f debian/rules build-package
 ```
 
 ### Method 3: Using debuild (for signed packages)
@@ -45,18 +44,14 @@ debuild -us -uc
 ### Install the .deb package:
 
 ```bash
-# Install the package
-sudo dpkg -i sonda_*.deb
-
-# If dependencies are missing, install them:
-sudo apt-get install -f
+# Install the built package and resolve runtime dependencies through APT
+./install_debian.sh install
 ```
 
-### Or use apt to install:
+### Or install the local package directly:
 
 ```bash
-# After building, you can install with apt
-sudo apt install ./sonda_*.deb
+sudo apt-get install ./dist/sonda_*/sonda_*.deb
 ```
 
 ## Uninstallation
@@ -100,12 +95,12 @@ dpkg -L sonda
 
 ### Build fails with "command not found: dh"
 ```bash
-sudo apt install debhelper
+./install_debian.sh deps
 ```
 
 ### Missing dependencies during build
 ```bash
-sudo apt install build-essential debhelper dh-python
+./install_debian.sh deps
 ```
 
 ### Package installs but command not found
@@ -151,5 +146,5 @@ Description: Sonda package repository
 EOF
 
 # Add package to repository
-reprepro -b repo includedeb stable sonda_*.deb
+reprepro -b repo includedeb stable dist/sonda_*/sonda_*.deb
 ```

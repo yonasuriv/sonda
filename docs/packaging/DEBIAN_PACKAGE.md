@@ -9,22 +9,16 @@ Sonda is now available as a proper Debian package (`.deb`), providing clean inst
 ### Build the Package
 
 ```bash
-# Install build dependencies (one-time)
-sudo apt update
-sudo apt install -y build-essential debhelper dh-python python3-all
-
-# Build the package
-make build
+# Install build dependencies and build the package
+./install_debian.sh deps
+./install_debian.sh build
 ```
 
 ### Install
 
 ```bash
-# Install the .deb file
-sudo dpkg -i ../sonda_*.deb
-
-# Fix dependencies if needed
-sudo apt-get install -f
+# Install the .deb file and resolve runtime dependencies
+./install_debian.sh install
 ```
 
 ### Uninstall
@@ -64,7 +58,7 @@ After installation, files are placed in standard system directories:
 ## Advantages Over SETUP.sh
 
 ### ✅ Standard Package Management
-- Install with `dpkg -i` or `apt install`
+- Install with `apt-get install ./dist/sonda_*/sonda_*.deb`
 - Uninstall with `apt remove` or `dpkg -r`
 - Automatic dependency resolution
 - Package information via `dpkg -l sonda`
@@ -118,22 +112,24 @@ The package automatically handles these dependencies:
 - python3-pip
 - lolcat (optional - falls back to single color if not installed)
 
-All dependencies are automatically installed when you run `apt-get install -f` after installing the .deb file.
+Runtime dependencies are automatically resolved when the helper installs the local `.deb` with APT.
 
 ## Building the Package
 
-### Method 1: Using Makefile (Easiest)
+### Method 1: Using the Helper Script (Easiest)
 
 ```bash
-make build        # Build only
-make install      # Build and install
-make clean        # Clean build artifacts
+./install_debian.sh build    # Build only
+./install_debian.sh all      # Build and install
+make -f debian/rules clean   # Clean build artifacts
 ```
 
-### Method 2: Using dpkg-buildpackage
+Artifacts are kept under `.build/` and `dist/`; nothing is written to the parent directory.
+
+### Method 2: Using Debian Rules
 
 ```bash
-cd packagng && dpkg-buildpackage -us -uc -b
+make -f debian/rules build-package
 ```
 
 ### Method 3: Using debuild (for signed packages)
@@ -146,20 +142,15 @@ debuild -us -uc
 
 1. **Build the package:**
    ```bash
-   make build
+   ./install_debian.sh build
    ```
 
 2. **Install the package:**
    ```bash
-   sudo dpkg -i ../sonda_*.deb
+   ./install_debian.sh install
    ```
 
-3. **Fix dependencies (if needed):**
-   ```bash
-   sudo apt-get install -f
-   ```
-
-4. **Verify installation:**
+3. **Verify installation:**
    ```bash
    sonda --version
    ```
@@ -221,9 +212,7 @@ If you previously installed using SETUP.sh:
 
 3. **Install new .deb package:**
    ```bash
-   make build
-   sudo dpkg -i ../sonda_*.deb
-   sudo apt-get install -f
+   ./install_debian.sh all
    ```
 
 ## Troubleshooting
@@ -232,19 +221,19 @@ If you previously installed using SETUP.sh:
 
 **Error: "command not found: dh"**
 ```bash
-sudo apt install debhelper
+./install_debian.sh deps
 ```
 
 **Error: "dpkg-buildpackage: command not found"**
 ```bash
-sudo apt install build-essential devscripts
+./install_debian.sh deps
 ```
 
 ### Installation Issues
 
 **Error: "dependency problems"**
 ```bash
-sudo apt-get install -f
+./install_debian.sh install
 ```
 
 **Error: "command not found: sonda"**
@@ -264,7 +253,7 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 ## Package Information
 
 - **Package Name:** sonda
-- **Version:** 1.8.2-1
+- **Version:** from `debian/changelog`
 - **Architecture:** all (architecture-independent)
 - **Section:** utils
 - **Priority:** optional
@@ -272,9 +261,9 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 
 ## Next Steps
 
-1. Build the package: `make build`
-2. Test installation: `sudo dpkg -i ../sonda_*.deb`
+1. Build the package: `./install_debian.sh build`
+2. Test installation: `./install_debian.sh install`
 3. Verify functionality: `sonda --help`
-4. Distribute the .deb file to users
+4. Distribute the `.deb` from `dist/sonda_<version>/`
 
 The package is production-ready and follows Debian packaging standards!

@@ -5,28 +5,21 @@
 ### Step 1: Build the Package
 
 ```bash
-# Install build dependencies (one-time setup - minimal set)
-sudo apt update
-sudo apt install -y build-essential debhelper-compat dh-python python3-all python3-pip
-
-# Build the package
-make build
+# Install build dependencies and build the package
+./install_debian.sh deps
+./install_debian.sh build
 ```
 
-This will create `sonda_1.8.2-1_all.deb` in the parent directory.
+This creates the package under `dist/sonda_<version>/`. No package artifacts are written to the parent directory.
 
 ### Step 2: Install the Package
 
 ```bash
-# Navigate to where the .deb file was created
-cd ..
-
-# Install the package
-sudo dpkg -i sonda_*.deb
-
-# If you get dependency errors, fix them:
-sudo apt-get install -f
+# Install the package and resolve runtime dependencies through APT
+./install_debian.sh install
 ```
+
+For a one-command local build and install, run `./install_debian.sh all`.
 
 ### Step 3: Verify Installation
 
@@ -108,8 +101,8 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 ### Missing dependencies
 
 ```bash
-# Install missing dependencies
-sudo apt-get install -f
+# Re-run dependency installation
+./install_debian.sh deps
 ```
 
 ## Building for Distribution

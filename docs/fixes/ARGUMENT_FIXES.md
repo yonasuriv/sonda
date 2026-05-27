@@ -67,13 +67,13 @@ After these fixes, rebuild and reinstall:
 ```bash
 # Rebuild the package
 make clean
-make build
+./install_debian.sh build
 
 # Reinstall
-sudo dpkg -i ../sonda_*.deb
+./install_debian.sh install
 
-# Or upgrade if already installed
-sudo dpkg -i --force-overwrite ../sonda_*.deb
+# Or build and install in one step
+./install_debian.sh all
 ```
 
 ## Testing

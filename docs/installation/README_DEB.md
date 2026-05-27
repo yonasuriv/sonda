@@ -5,24 +5,22 @@
 ### Build and Install
 
 ```bash
-# Install build dependencies (minimal set)
-sudo apt update
-sudo apt install -y build-essential debhelper-compat dh-python python3-all python3-pip
-
-# Build the package
-make build
-
-# Install the package
-sudo dpkg -i ../sonda_*.deb
-
-# If dependencies are missing:
-sudo apt-get install -f
+# Install build dependencies, build the package, and install it
+./install_debian.sh all
 ```
 
-### Or use the simple method:
+### Separate Steps
 
 ```bash
-make install
+./install_debian.sh deps
+./install_debian.sh build
+./install_debian.sh install
+```
+
+The build output is kept inside the repository:
+
+```bash
+dist/sonda_<version>/
 ```
 
 ## Uninstallation

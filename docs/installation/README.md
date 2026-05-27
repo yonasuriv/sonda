@@ -29,5 +29,6 @@ This directory contains all documentation for the Sonda project.
 ## Quick Links
 
 - Main README: [../README.md](../README.md)
-- Build package: `make build`
-- Install package: `sudo dpkg -i ../sonda_*.deb`
+- Build package: `./install_debian.sh build`
+- Install package: `./install_debian.sh install`
+- Build and install: `./install_debian.sh all`

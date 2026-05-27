@@ -2,14 +2,14 @@
 # See debhelper(7) (uncomment to enable)
 # export DH_VERBOSE = 1
 
-# Version and package info
-# When called from root: VERSION is at root
-# When called from debian/: VERSION is at ../VERSION
-VERSION := $(shell if [ -f VERSION ]; then cat VERSION; elif [ -f ../VERSION ]; then cat ../VERSION; else echo "1.8.5"; fi)
-DEB_VERSION := $(VERSION)-1
+# Version and package info. dpkg-buildpackage takes the package version from
+# debian/changelog, so helper targets use the same source to avoid mismatched
+# artifact names when VERSION and the changelog are temporarily out of sync.
+DEB_VERSION := $(shell dpkg-parsechangelog -S Version 2>/dev/null || echo "1.8.5-1")
 PACKAGE_NAME := sonda_$(DEB_VERSION)_all.deb
 # DIST_DIR is relative to project root
 DIST_DIR := dist/sonda_$(DEB_VERSION)
+BUILD_ROOT := .build
 
 # Standard debhelper targets
 %:
@@ -18,7 +18,7 @@ DIST_DIR := dist/sonda_$(DEB_VERSION)
 # Custom targets for building and managing packages
 # Note: 'build' and 'install' targets are debhelper targets - don't override them
 # Use 'install-package' for installing the built .deb file
-.PHONY: clean install-package package collect help uninstall
+.PHONY: clean build-package install-package package collect help uninstall
 
 clean:
 	@echo ""
@@ -32,6 +32,8 @@ clean:
 	rm -f debian/*.substvars
 	rm -f debian/*.debhelper
 	rm -f debian/*.log
+	rm -f debian/debhelper-build-stamp
+	rm -rf $(BUILD_ROOT)
 	@bash -c 'if [ -f $(PACKAGE_NAME) ]; then rm -f $(PACKAGE_NAME); fi'
 	@bash -c 'if [ -f sonda_*.deb ]; then rm -f sonda_*.deb; fi'
 	@bash -c 'if [ -f sonda_*.buildinfo ]; then rm -f sonda_*.buildinfo; fi'
@@ -45,22 +47,23 @@ collect:
 	@echo ""
 	@echo "Collecting build artifacts..."
 	@mkdir -p $(DIST_DIR)
-	@bash -c 'for deb in $(PACKAGE_NAME) ../$(PACKAGE_NAME) sonda_*.deb ../sonda_*.deb; do if [ -f "$$deb" ] 2>/dev/null; then cp -a "$$deb" $(DIST_DIR)/ 2>/dev/null && echo "Collected: $$deb" && break; fi; done'
-	@bash -c 'for f in sonda_*_*.buildinfo ../sonda_*_*.buildinfo; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
-	@bash -c 'for f in sonda_*_*.changes ../sonda_*_*.changes; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
-	@bash -c 'for f in sonda_*.dsc ../sonda_*.dsc; do if [ -f "$$f" ] 2>/dev/null; then cp -a "$$f" $(DIST_DIR)/ 2>/dev/null && break; fi; done'
-	@bash -c 'for f in sonda_*.tar.* ../sonda_*.tar.*; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
+	@bash -c 'for deb in dist/sonda_*.deb $(BUILD_ROOT)/sonda_*.deb sonda_*.deb; do if [ -f "$$deb" ] 2>/dev/null; then cp -a "$$deb" $(DIST_DIR)/ 2>/dev/null && echo "Collected: $$deb" && break; fi; done'
+	@bash -c 'for f in dist/sonda_*_*.buildinfo $(BUILD_ROOT)/sonda_*_*.buildinfo sonda_*_*.buildinfo; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
+	@bash -c 'for f in dist/sonda_*_*.changes $(BUILD_ROOT)/sonda_*_*.changes sonda_*_*.changes; do if ls $$f 2>/dev/null | head -1 | grep -q .; then cp -a $$f $(DIST_DIR)/ 2>/dev/null && break; fi; done'
 	@echo "Collected artifacts in $(DIST_DIR)"
 	@echo ""
 
+build-package:
+	@./install_debian.sh build
+
 package:
 	@echo "Package: $(PACKAGE_NAME)"
-	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -n "$$deb_file" ]; then ls -lh "$$deb_file"; elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); elif [ -f ../$(PACKAGE_NAME) ]; then ls -lh ../$(PACKAGE_NAME); else echo "Package not found in $(DIST_DIR) or root. Run build first."; fi'
+	@bash -c 'deb_file=$$(find $(DIST_DIR) dist -name "sonda_*.deb" -type f 2>/dev/null | sort | tail -1); if [ -n "$$deb_file" ]; then ls -lh "$$deb_file"; elif [ -f $(PACKAGE_NAME) ]; then ls -lh $(PACKAGE_NAME); else echo "Package not found in dist/. Run build first."; fi'
 
 install-package:
 	@echo ""
 	@echo "Installing package..."
-	@bash -c 'deb_file=$$(find $(DIST_DIR) -name "sonda_*.deb" -type f 2>/dev/null | head -1); if [ -z "$$deb_file" ]; then deb_file=$$(find .. -maxdepth 1 -name "sonda_$(DEB_VERSION)_all.deb" -type f 2>/dev/null | head -1); fi; if [ -n "$$deb_file" ]; then echo "Installing: $$deb_file"; sudo dpkg -i "$$deb_file" || (echo "Fixing dependencies..."; sudo apt-get install -f -y); else echo "Error: No .deb package found in $(DIST_DIR) or parent directory"; exit 1; fi'
+	@bash -c 'deb_file=$$(find $(DIST_DIR) dist -name "sonda_*.deb" -type f 2>/dev/null | sort | tail -1); if [ -n "$$deb_file" ]; then echo "Installing: $$deb_file"; sudo apt-get install -y "$$(realpath "$$deb_file")"; else echo "Error: No .deb package found in dist/. Run build first."; exit 1; fi'
 	@echo "Installation complete!"
 	@echo ""
 
@@ -74,17 +77,17 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make -f debian/rules clean         - Clean build artifacts"
+	@echo "  make -f debian/rules build-package - Build inside .build/ and collect to dist/"
 	@echo "  make -f debian/rules collect       - Collect build artifacts to dist/"
 	@echo "  make -f debian/rules package       - Show package info from dist/"
 	@echo "  make -f debian/rules install-package - Install the package from dist/"
 	@echo "  make -f debian/rules uninstall      - Uninstall the package"
 	@echo "  make -f debian/rules help           - Show this help message"
 	@echo ""
-	@echo "Note: Use 'dpkg-buildpackage -us -uc -b' or './deb.sh build' to build"
+	@echo "Note: Use './install_debian.sh build' or 'make -f debian/rules build-package' to build"
 	@echo ""
 	@echo "Manual installation:"
-	@echo "  sudo dpkg -i dist/sonda_*/sonda_*.deb"
-	@echo "  sudo apt-get install -f  # Install dependencies if needed"
+	@echo "  sudo apt-get install ./dist/sonda_*/sonda_*.deb"
 
 # Debhelper overrides
 override_dh_auto_install:
