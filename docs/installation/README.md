@@ -29,7 +29,6 @@ This directory contains all documentation for the Sonda project.
 ## Quick Links
 
 - Main README: [../README.md](../README.md)
-- Quick release install: `wget -O /tmp/sonda.deb https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y /tmp/sonda.deb`
-- Build package: `./install_debian.sh build`
-- Install package: `./install_debian.sh install`
-- Build and install: `./install_debian.sh all`
+- Install latest release: `./install.sh release -d debian`
+- Build and install from source: `./install.sh source -d debian`
+- Verbose output: add `-v`

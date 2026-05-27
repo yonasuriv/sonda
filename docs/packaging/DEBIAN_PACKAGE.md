@@ -9,22 +9,22 @@ Sonda is now available as a proper Debian package (`.deb`), providing clean inst
 ### Install Latest Release
 
 ```bash
-tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+git clone https://github.com/yonasuriv/sonda /tmp/sonda
+cd /tmp/sonda
+./install.sh release -d debian
 ```
 
 ### Build the Package
 
 ```bash
-# Install build dependencies and build the package
-./install_debian.sh deps
-./install_debian.sh build
+./install.sh source -d debian
 ```
 
 ### Install
 
 ```bash
-# Install the .deb file and resolve runtime dependencies
-./install_debian.sh install
+# Install the latest release package
+./install.sh release -d debian
 ```
 
 ### Uninstall
@@ -125,8 +125,8 @@ Runtime dependencies are automatically resolved when the helper installs the loc
 ### Method 1: Using the Helper Script (Easiest)
 
 ```bash
-./install_debian.sh build    # Build only
-./install_debian.sh all      # Build and install
+./scripts/install_debian.sh build  # Build only
+./install.sh source -d debian      # Build and install
 make -f debian/rules clean   # Clean build artifacts
 ```
 
@@ -148,12 +148,12 @@ debuild -us -uc
 
 1. **Build the package:**
    ```bash
-   ./install_debian.sh build
+   ./scripts/install_debian.sh build
    ```
 
 2. **Install the package:**
    ```bash
-   ./install_debian.sh install
+   ./install.sh source -d debian
    ```
 
 3. **Verify installation:**
@@ -218,7 +218,7 @@ If you previously installed using SETUP.sh:
 
 3. **Install new .deb package:**
    ```bash
-   ./install_debian.sh all
+   ./install.sh source -d debian
    ```
 
 ## Troubleshooting
@@ -227,19 +227,19 @@ If you previously installed using SETUP.sh:
 
 **Error: "command not found: dh"**
 ```bash
-./install_debian.sh deps
+./install.sh source -d debian -v
 ```
 
 **Error: "dpkg-buildpackage: command not found"**
 ```bash
-./install_debian.sh deps
+./install.sh source -d debian -v
 ```
 
 ### Installation Issues
 
 **Error: "dependency problems"**
 ```bash
-./install_debian.sh install
+./install.sh release -d debian -v
 ```
 
 **Error: "command not found: sonda"**
@@ -267,8 +267,8 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 
 ## Next Steps
 
-1. Build the package: `./install_debian.sh build`
-2. Test installation: `./install_debian.sh install`
+1. Build the package: `./scripts/install_debian.sh build`
+2. Test installation: `./install.sh source -d debian`
 3. Verify functionality: `sonda --help`
 4. Distribute the `.deb` from `dist/sonda_<version>/`
 

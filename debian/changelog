@@ -1,3 +1,13 @@
+sonda (2.0.3-1) unstable; urgency=medium
+
+  * Add top-level install.sh dispatcher for release and source installs.
+  * Support Debian install selection with -d debian.
+  * Add quiet default installer output with optional -v verbosity.
+  * Move Debian source-build helper under scripts/.
+  * Update installation documentation to use install.sh.
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Wed, 27 May 2026 00:00:00 +0000
+
 sonda (2.0.2-1) unstable; urgency=medium
 
   * Keep Debian build artifacts inside the repository.

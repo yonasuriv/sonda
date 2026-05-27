@@ -54,7 +54,7 @@ collect:
 	@echo ""
 
 build-package:
-	@./install_debian.sh build
+	@./scripts/install_debian.sh build
 
 package:
 	@echo "Package: $(PACKAGE_NAME)"
@@ -84,7 +84,7 @@ help:
 	@echo "  make -f debian/rules uninstall      - Uninstall the package"
 	@echo "  make -f debian/rules help           - Show this help message"
 	@echo ""
-	@echo "Note: Use './install_debian.sh build' or 'make -f debian/rules build-package' to build"
+	@echo "Note: Use './install.sh source -d debian' or 'make -f debian/rules build-package' to build"
 	@echo ""
 	@echo "Manual installation:"
 	@echo "  sudo apt-get install ./dist/sonda_*/sonda_*.deb"

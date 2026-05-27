@@ -5,7 +5,9 @@
 ### Fast Path: Install Latest Release
 
 ```bash
-tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+git clone https://github.com/yonasuriv/sonda /tmp/sonda
+cd /tmp/sonda
+./install.sh release -d debian
 ```
 
 APT installs the local package and resolves runtime dependencies from your configured repositories.
@@ -13,23 +15,14 @@ APT installs the local package and resolves runtime dependencies from your confi
 ### Step 1: Build the Package From Source
 
 ```bash
-# Install build dependencies and build the package
-./install_debian.sh deps
-./install_debian.sh build
+./install.sh source -d debian
 ```
 
 This creates the package under `dist/sonda_<version>/`. No package artifacts are written to the parent directory.
 
-### Step 2: Install the Package
+Add `-v` to show full command output. By default, the installer prompts for sudo first, then hides command noise unless a command fails.
 
-```bash
-# Install the package and resolve runtime dependencies through APT
-./install_debian.sh install
-```
-
-For a one-command local build and install, run `./install_debian.sh all`.
-
-### Step 3: Verify Installation
+### Step 2: Verify Installation
 
 ```bash
 # Check if sonda is available
@@ -110,7 +103,7 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 
 ```bash
 # Re-run dependency installation
-./install_debian.sh deps
+./install.sh source -d debian -v
 ```
 
 ## Building for Distribution

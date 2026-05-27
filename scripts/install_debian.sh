@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Purpose: Fast build and/or install the sonda .deb.
-# Usage: ./install_debian.sh [build|install|deps|all]
+# Usage: ./scripts/install_debian.sh [build|install|deps|all]
 # Notes: Builds inside .build/ so package artifacts never land outside the repo.
 
 set -euo pipefail
@@ -14,9 +14,10 @@ DEPS=(
 )
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-BUILD_ROOT="$SCRIPT_DIR/.build"
+ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+BUILD_ROOT="$ROOT_DIR/.build"
 BUILD_SRC="$BUILD_ROOT/sonda-src"
-DIST_ROOT="$SCRIPT_DIR/dist"
+DIST_ROOT="$ROOT_DIR/dist"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -177,7 +178,7 @@ build() {
   need_cmd dpkg-buildpackage
   need_cmd tar
 
-  cd "$SCRIPT_DIR"
+  cd "$ROOT_DIR"
   make -f debian/rules clean
 
   rm -rf "$BUILD_SRC"
@@ -209,7 +210,7 @@ build() {
 
 install() {
   # Use debian/rules install-package target
-  cd "$SCRIPT_DIR"
+  cd "$ROOT_DIR"
   make -f debian/rules install-package
 }
 

@@ -5,23 +5,22 @@
 ### Install Latest Release
 
 ```bash
-tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+git clone https://github.com/yonasuriv/sonda /tmp/sonda
+cd /tmp/sonda
+./install.sh release -d debian
 ```
 
 ### Build and Install From Source
 
 ```bash
-# Install build dependencies, build the package, and install it
-./install_debian.sh all
+./install.sh source -d debian
 ```
 
-### Separate Steps
+Add `-v` to either command to show full command output. By default, the installer hides command noise and prints high-level progress plus errors.
 
-```bash
-./install_debian.sh deps
-./install_debian.sh build
-./install_debian.sh install
-```
+### Lower-Level Debian Helper
+
+The top-level installer delegates source builds to `scripts/install_debian.sh`.
 
 The build output is kept inside the repository:
 

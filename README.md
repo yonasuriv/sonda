@@ -65,17 +65,21 @@ Sonda can also stream real-time updates directly to your terminal, including pac
   - Designed to be straightforward to extend with additional modules.
 
 ## Installation
-To install the latest release package:
+Clone the repository, then install either the latest release package or build from source.
 
 ```bash
-tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+git clone https://github.com/yonasuriv/sonda /tmp/sonda
+cd /tmp/sonda
+./install.sh release -d debian
 ```
 
-To build and install from source, clone the repository and run the Debian packaging helper script:
+To build and install from source:
 
 ```bash
-git clone https://github.com/yonasuriv/sonda /tmp/sonda && cd /tmp/sonda && ./install_debian.sh all
+./install.sh source -d debian
 ```
+
+Add `-v` to either command to show full command output. By default, the installer keeps terminal noise quiet and only prints high-level progress plus errors. The installer prompts for sudo first so package installation can proceed cleanly.
 
 All required dependencies are handled automatically by the packaging process. To uninstall Sonda, run `sudo dpkg -r sonda`.
 

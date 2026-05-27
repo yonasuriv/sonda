@@ -58,13 +58,13 @@ After these fixes, rebuild and reinstall:
 ```bash
 # Rebuild the package
 make clean
-./install_debian.sh build
+./install.sh source -d debian
 
 # Reinstall
-./install_debian.sh install
+./install.sh release -d debian
 
 # Or build and install in one step
-./install_debian.sh all
+./install.sh source -d debian
 ```
 
 ## Testing

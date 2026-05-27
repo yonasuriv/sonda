@@ -5,7 +5,7 @@
 Install build dependencies (minimal set - only what's needed to build):
 
 ```bash
-./install_debian.sh deps
+./install.sh source -d debian
 ```
 
 ## Building the Package
@@ -14,10 +14,10 @@ Install build dependencies (minimal set - only what's needed to build):
 
 ```bash
 # Build the package
-./install_debian.sh build
+./scripts/install_debian.sh build
 
 # Build and install
-./install_debian.sh all
+./install.sh source -d debian
 
 # Clean build artifacts
 make -f debian/rules clean
@@ -45,7 +45,7 @@ debuild -us -uc
 
 ```bash
 # Install the built package and resolve runtime dependencies through APT
-./install_debian.sh install
+./install.sh source -d debian
 ```
 
 ### Or install the local package directly:
@@ -95,12 +95,12 @@ dpkg -L sonda
 
 ### Build fails with "command not found: dh"
 ```bash
-./install_debian.sh deps
+./install.sh source -d debian -v
 ```
 
 ### Missing dependencies during build
 ```bash
-./install_debian.sh deps
+./install.sh source -d debian -v
 ```
 
 ### Package installs but command not found
