@@ -17,16 +17,16 @@ chassis_type=$(cat "/sys/class/dmi/id/chassis_type")
 chassis_vendor=$(cat "/sys/class/dmi/id/chassis_vendor")
 
 # Fetch distribution information from /etc/os-release
-os_name=$(grep "^NAME=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
-os_version=$(grep "^VERSION=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
-os_pretty_name=$(grep "^PRETTY_NAME=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
+os_name=$(grep "^NAME=" /etc/os-release |  cut -d '=' -f2 |  tr -d '"')
+os_version=$(grep "^VERSION=" /etc/os-release |  cut -d '=' -f2 |  tr -d '"')
+os_pretty_name=$(grep "^PRETTY_NAME=" /etc/os-release |  cut -d '=' -f2 |  tr -d '"')
 
 # Fetch distribution type (ID) and parent distribution (ID_LIKE)
-distro_type=$(grep "^ID=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
-distro_base=$(grep "^ID_LIKE=" /etc/os-release | cut -d '=' -f2 | tr -d '"')
+distro_type=$(grep "^ID=" /etc/os-release |  cut -d '=' -f2 |  tr -d '"')
+distro_base=$(grep "^ID_LIKE=" /etc/os-release |  cut -d '=' -f2 |  tr -d '"')
 
 # Fetch kernel version from /proc/version
-kernel_version=$(cat /proc/version | awk '{print $3}')
+kernel_version=$(cat /proc/version |  awk '{print $3}')
 kernel_name=$(uname -s)
 
 # Fetch architecture from uname
@@ -44,10 +44,10 @@ uptime_minutes=$(awk -v seconds="$uptime_seconds" 'BEGIN {print int((seconds%360
 formatted_uptime="${uptime_days} days, ${uptime_hours} hours, ${uptime_minutes} minutes"
 
 # Fetch CPU model and details from /proc/cpuinfo
-cpu_model=$(grep -m 1 'model name' /proc/cpuinfo | cut -d ':' -f2 | xargs)
+cpu_model=$(grep -m 1 'model name' /proc/cpuinfo |  cut -d ':' -f2 |  xargs)
 
 # Fetch total memory (RAM) from /proc/meminfo
-total_memory=$(grep MemTotal /proc/meminfo | awk '{print $2 / 1024 " MB"}')
+total_memory=$(grep MemTotal /proc/meminfo |  awk '{print $2 / 1024 " MB"}')
 
 # Fetch firmware version from /sys/class/dmi/id/bios_version
 firmware_version=$(cat "/sys/class/dmi/id/bios_version")
@@ -82,67 +82,65 @@ firmware_months=$(awk "BEGIN {print int($firmware_age_in_months % 12)}")
 firmware_age="${firmware_years}y, $firmware_months"
 
 # Fetch total installed packages
-total_pkgs="$(dpkg -l | cat | wc -l)"
+total_pkgs="$(dpkg -l |  cat |  wc -l)"
 
 # Fetch memory information
-total_memory=$(grep MemTotal /proc/meminfo | awk '{print $2 / 1024 " MB"}')
-available_memory=$(grep MemAvailable /proc/meminfo | awk '{print $2 / 1024 " MB"}')
+total_memory=$(grep MemTotal /proc/meminfo |  awk '{print $2 / 1024 " MB"}')
+available_memory=$(grep MemAvailable /proc/meminfo |  awk '{print $2 / 1024 " MB"}')
 used_memory=$(awk '/MemTotal/{total=$2} /MemAvailable/{available=$2} END {print (total-available) / 1024 " MB"}' /proc/meminfo)
 
 # Fetch disk information
-total_disk=$(df --total -BG | grep 'total' | awk '{print $2}' | sed 's/G//')
-used_disk=$(df --total -BG | grep 'total' | awk '{print $3}' | sed 's/G//')
-available_disk=$(df --total -BG | grep 'total' | awk '{print $4}' | sed 's/G//')
-most_used_fs=$(df -h | grep -vE '^Filesystem|tmpfs|cdrom' | sort -k 5 -r | head -n 1 | awk '{print $1 " (" $5 " used)"}')
+total_disk=$(df --total -BG |  grep 'total' |  awk '{print $2}' |  sed 's/G//')
+used_disk=$(df --total -BG |  grep 'total' |  awk '{print $3}' |  sed 's/G//')
+available_disk=$(df --total -BG |  grep 'total' |  awk '{print $4}' |  sed 's/G//')
+most_used_fs=$(df -h |  grep -vE '^Filesystem|tmpfs|cdrom' |  sort -k 5 -r |  head -n 1 |  awk '{print $1 " (" $5 " used)"}')
 
 # Fetch GPU model information
-gpu_info=$(lspci | grep -i vga | cut -d ':' -f3 | xargs)
+gpu_info=$(lspci |  grep -i vga |  cut -d ':' -f3 |  xargs)
 
 # Fetch Audio model information
-audio_info=$(lspci | grep -i audio | cut -d ':' -f3 | xargs)
-
+audio_info=$(lspci |  grep -i audio |  cut -d ':' -f3 |  xargs)
 
 # Output the information in a formatted way
-echo -e " "
 echo -e "[+] ${WHITE2}System Information ${RT}"
-echo -e " | "
-echo -e " | System Uptime:          $formatted_uptime"
-echo -e " | "
-echo -e " | Hostname:               $hostname"
-echo -e " | "
-echo -e " | Operating System:       $os_pretty_name $os_version"
-echo -e " | Architecture:           $architecture"
-echo -e " | Distribution Type:      $distro_base"
-echo -e " | "
-echo -e " | Kernel Name:            $kernel_name"
-echo -e " | Kernel Release:         $kernel_version ($kernel_release)"
-echo -e " | Kernel Version:         $kernel_version_full"
-echo -e " | "
-echo -e " | CPU Model:              $cpu_model"
-echo -e " | GPU Model:              $gpu_info"
-echo -e " | Audio Model:            $audio_info"
-echo -e " | "
-echo -e " | Hardware Vendor:        $hardware_vendor"
-echo -e " | Hardware Model:         $hardware_model"
-echo -e " | "
-echo -e " | Firmware Version:       $firmware_version"
-echo -e " | Firmware Date:          $firmware_date"
-echo -e " | Firmware Age:           $firmware_age_in_months months"
-echo -e " | "
-echo -e " | Installed Packages:     $total_pkgs"
-echo -e " | "
-echo -e " | Total Disk Space:       $total_disk GB"
-echo -e " | Used Disk Space:        $used_disk GB"
-echo -e " | Available Disk Space:   $available_disk GB"
-echo -e " | Most Used Filesystem:   $most_used_fs"
-echo -e " | "
-echo -e " | Total Memory:           $total_memory"
-echo -e " | Used Memory:            $used_memory"
-echo -e " | Available Memory:       $available_memory"
-echo -e " | "
-echo -e " | Boot ID:                $boot_id"
-echo -e " | Machine ID:             $machine_id"
-#echo -e " | "
-#echo -e " | Chassis Type:           $chassis_type"
-#echo -e " | Chassis Vendor:         $chassis_vendor"
+echo -e " |  "
+echo -e " |  System Uptime:          $formatted_uptime"
+echo -e " |  "
+echo -e " |  Hostname:               $hostname"
+echo -e " |  "
+echo -e " |  Operating System:       $os_pretty_name $os_version"
+echo -e " |  Architecture:           $architecture"
+echo -e " |  Distribution Type:      $distro_base"
+echo -e " |  "
+echo -e " |  Kernel Name:            $kernel_name"
+echo -e " |  Kernel Release:         $kernel_version ($kernel_release)"
+echo -e " |  Kernel Version:         $kernel_version_full"
+echo -e " |  "
+echo -e " |  CPU Model:              $cpu_model"
+echo -e " |  GPU Model:              $gpu_info"
+echo -e " |  Audio Model:            $audio_info"
+echo -e " |  "
+echo -e " |  Hardware Vendor:        $hardware_vendor"
+echo -e " |  Hardware Model:         $hardware_model"
+echo -e " |  "
+echo -e " |  Firmware Version:       $firmware_version"
+echo -e " |  Firmware Date:          $firmware_date"
+echo -e " |  Firmware Age:           $firmware_age_in_months months"
+echo -e " |  "
+echo -e " |  Installed Packages:     $total_pkgs"
+echo -e " |  "
+echo -e " |  Total Disk Space:       $total_disk GB"
+echo -e " |  Used Disk Space:        $used_disk GB"
+echo -e " |  Available Disk Space:   $available_disk GB"
+echo -e " |  Most Used Filesystem:   $most_used_fs"
+echo -e " |  "
+echo -e " |  Total Memory:           $total_memory"
+echo -e " |  Used Memory:            $used_memory"
+echo -e " |  Available Memory:       $available_memory"
+echo -e " |  "
+echo -e " |  Boot ID:                $boot_id"
+echo -e " |  Machine ID:             $machine_id"
+#echo -e " |  "
+#echo -e " |  Chassis Type:           $chassis_type"
+#echo -e " |  Chassis Vendor:         $chassis_vendor"
 #echo ""

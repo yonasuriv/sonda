@@ -65,11 +65,19 @@ Sonda can also stream real-time updates directly to your terminal, including pac
   - Designed to be straightforward to extend with additional modules.
 
 ## Installation
-Clone the repository, then install either the latest release package or build from source.
+
+> [!NOTE]
+> Sonda is currently available only for debian distros.
+
+Clone the repository:
 
 ```bash
-git clone https://github.com/yonasuriv/sonda /tmp/sonda
-cd /tmp/sonda
+git clone https://github.com/yonasuriv/sonda /tmp/sonda && cd /tmp/sonda
+```
+
+To install from the latest release package:
+
+```bash
 ./install.sh release -d debian
 ```
 
