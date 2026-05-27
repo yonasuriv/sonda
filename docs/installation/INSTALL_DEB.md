@@ -2,7 +2,15 @@
 
 ## Quick Installation Guide
 
-### Step 1: Build the Package
+### Fast Path: Install Latest Release
+
+```bash
+tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+```
+
+APT installs the local package and resolves runtime dependencies from your configured repositories.
+
+### Step 1: Build the Package From Source
 
 ```bash
 # Install build dependencies and build the package

@@ -1,3 +1,12 @@
+sonda (2.0.2-1) unstable; urgency=medium
+
+  * Keep Debian build artifacts inside the repository.
+  * Install local packages through APT for clean dependency resolution.
+  * Reduce package build dependencies to the minimal debhelper set.
+  * Document release-based quick installation.
+
+ -- yonasuriv <yonasuriv@users.noreply.github.com>  Wed, 27 May 2026 00:00:00 +0000
+
 sonda (2.0.1-1) unstable; urgency=medium
 
   * Fixed help system routing: sonda --help, sonda help [topic] now work correctly

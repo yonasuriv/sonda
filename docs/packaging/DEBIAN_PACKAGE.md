@@ -6,6 +6,12 @@ Sonda is now available as a proper Debian package (`.deb`), providing clean inst
 
 ## Quick Start
 
+### Install Latest Release
+
+```bash
+tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+```
+
 ### Build the Package
 
 ```bash

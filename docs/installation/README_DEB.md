@@ -2,7 +2,13 @@
 
 ## Quick Start
 
-### Build and Install
+### Install Latest Release
+
+```bash
+tmp="$(mktemp -d)" && wget -O "$tmp/sonda.deb" https://github.com/yonasuriv/sonda/releases/latest/download/sonda_latest_all.deb && sudo apt-get install -y "$tmp/sonda.deb"
+```
+
+### Build and Install From Source
 
 ```bash
 # Install build dependencies, build the package, and install it
