@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Build dependencies only (minimal set needed to build the .deb package)
-# Runtime dependencies are defined in debian/control
+# Runtime dependencies are defined in build/debian/control
 DEPS=(
   build-essential
   "debhelper-compat (= 13)"
@@ -15,6 +15,7 @@ DEPS=(
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+PACKAGING_DIR="$ROOT_DIR/build/debian"
 BUILD_ROOT="$ROOT_DIR/.build"
 BUILD_SRC="$BUILD_ROOT/sonda-src"
 DIST_ROOT="$ROOT_DIR/dist"
@@ -177,9 +178,10 @@ EOF
 build() {
   need_cmd dpkg-buildpackage
   need_cmd tar
+  [[ -d "$PACKAGING_DIR" ]] || die "Missing Debian packaging directory: $PACKAGING_DIR"
 
   cd "$ROOT_DIR"
-  make -f debian/rules clean
+  make -f build/debian/rules clean
 
   rm -rf "$BUILD_SRC"
   mkdir -p "$BUILD_SRC"
@@ -192,6 +194,7 @@ build() {
     --exclude='./build' \
     --exclude='./dist' \
     -cf - . | tar -xf - -C "$BUILD_SRC"
+  cp -a "$PACKAGING_DIR" "$BUILD_SRC/debian"
 
   echo ""
   echo "Building debian package..."
@@ -205,13 +208,13 @@ build() {
     \( -name 'sonda_*.deb' -o -name 'sonda_*.buildinfo' -o -name 'sonda_*.changes' \) \
     -exec cp -a {} "$DIST_ROOT/" \;
 
-  make -f debian/rules collect
+  make -f build/debian/rules collect
 }
 
 install() {
-  # Use debian/rules install-package target
+  # Use build/debian/rules install-package target
   cd "$ROOT_DIR"
-  make -f debian/rules install-package
+  make -f build/debian/rules install-package
 }
 
 case "${1:-}" in

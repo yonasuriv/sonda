@@ -378,7 +378,7 @@ cd sonda
 
 # Install system dependencies (Debian/Ubuntu)
 # Note: Python dependencies are handled automatically by the Debian package
-# For manual installation, install the packages listed in packagng/debian/control
+# For manual installation, install the packages listed in build/debian/control
 sudo apt update
 sudo apt install -y lolcat inxi pciutils python3-psutil python3-requests python3-colorama
 

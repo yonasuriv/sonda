@@ -20,7 +20,7 @@ Install build dependencies (minimal set - only what's needed to build):
 ./install.sh source -d debian
 
 # Clean build artifacts
-make -f debian/rules clean
+make -f build/debian/rules clean
 ```
 
 Build artifacts are kept inside the repository under `.build/` and `dist/`.
@@ -29,7 +29,7 @@ Build artifacts are kept inside the repository under `.build/` and `dist/`.
 
 ```bash
 # Build the package
-make -f debian/rules build-package
+make -f build/debian/rules build-package
 ```
 
 ### Method 3: Using debuild (for signed packages)

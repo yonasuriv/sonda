@@ -39,7 +39,7 @@ sudo apt remove sonda
 ### Files Created
 
 ```
-packagng/debian/
+build/debian/
 ├── changelog          # Version history
 ├── control            # Package metadata and dependencies
 ├── copyright          # License information
@@ -127,7 +127,7 @@ Runtime dependencies are automatically resolved when the helper installs the loc
 ```bash
 ./scripts/install_debian.sh build  # Build only
 ./install.sh source -d debian      # Build and install
-make -f debian/rules clean   # Clean build artifacts
+make -f build/debian/rules clean   # Clean build artifacts
 ```
 
 Artifacts are kept under `.build/` and `dist/`; nothing is written to the parent directory.
@@ -135,7 +135,7 @@ Artifacts are kept under `.build/` and `dist/`; nothing is written to the parent
 ### Method 2: Using Debian Rules
 
 ```bash
-make -f debian/rules build-package
+make -f build/debian/rules build-package
 ```
 
 ### Method 3: Using debuild (for signed packages)
@@ -259,7 +259,7 @@ sudo gtk-update-icon-cache /usr/share/pixmaps
 ## Package Information
 
 - **Package Name:** sonda
-- **Version:** from `debian/changelog`
+- **Version:** from `build/debian/changelog`
 - **Architecture:** all (architecture-independent)
 - **Section:** utils
 - **Priority:** optional

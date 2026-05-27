@@ -120,7 +120,7 @@ alias sysinfo='sonda sys'
 
 ## Compatibility
 
-Sonda has been tested and validated on Kali Linux and is intended to be compatible with Debian-based GNU/Linux distributions. All runtime dependencies are managed by the Debian package (see `packaging/debian/control`).
+Sonda has been tested and validated on Kali Linux and is intended to be compatible with Debian-based GNU/Linux distributions. All runtime dependencies are managed by the Debian package (see `build/debian/control`).
 
 ## Support and Contributions
 

@@ -6,7 +6,7 @@ Files: *
 Copyright: 2024-2026 yonasuriv
 License: GPL-3.0+
 
-Files: debian/*
+Files: build/debian/* debian/*
 Copyright: 2026 yonasuriv
 License: GPL-3.0+
 

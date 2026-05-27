@@ -29,7 +29,7 @@ The version file has been moved from `lib/version/current` to the root directory
 5. **Makefile**
    - Updated version reading: `lib/version/current` → `version`
 
-6. **debian/rules**
+6. **build/debian/rules**
    - Updated version file installation path
    - Now installs `version` to `/usr/share/sonda/version`
 

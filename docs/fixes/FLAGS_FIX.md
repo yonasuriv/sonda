@@ -17,9 +17,9 @@
 ### 2. **Missing net-tools Dependency**
 **Problem:** `net-tools` package was required but not listed in Debian package dependencies.
 
-**Fix:** Added `net-tools` to the `Depends` section in `debian/control`.
+**Fix:** Added `net-tools` to the `Depends` section in `build/debian/control`.
 
-**Location:** `debian/control` - line 22
+**Location:** `build/debian/control` - line 22
 
 ### 3. **Inconsistent Flag Documentation**
 **Problem:** Help message (`--help`) didn't match all available flags, and some flags were missing.
@@ -57,7 +57,7 @@ The help message now correctly shows:
 
 ## Updated Dependencies
 
-Added to `debian/control`:
+Added to `build/debian/control`:
 - `net-tools` - Required for network commands like `ifconfig`, `netstat`, etc.
 
 ## Rebuild and Reinstall
@@ -99,7 +99,7 @@ ifconfig
 ## Files Modified
 
 - `modules/info/sys` - Fixed VLEVEL unbound variable
-- `debian/control` - Added net-tools dependency
+- `build/debian/control` - Added net-tools dependency
 - `lib/includes/man` - Updated help message to match all flags
 - `bin/sonda` - Added flag aliases and improved pre-processing
 

@@ -21,7 +21,6 @@ __pycache__/
 
 # Debian package build artifacts
 .build/
-build/
 debian/sonda/
 debian/.debhelper/
 debian/files
@@ -31,6 +30,15 @@ debian/*.debhelper.log
 debian/*.substvars
 debian/*.debhelper
 debian/*.log
+build/debian/sonda/
+build/debian/.debhelper/
+build/debian/files
+build/debian/substvars
+build/debian/debhelper-build-stamp
+build/debian/*.debhelper.log
+build/debian/*.substvars
+build/debian/*.debhelper
+build/debian/*.log
 
 # Built packages and distribution directory
 *.deb

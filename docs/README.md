@@ -58,7 +58,7 @@ sonda/
 │   └── modules/      # Information modules
 ├── VERSION           # Version file (root)
 ├── assets/           # Art, icons, desktop files
-├── packagng/         # Packaging files
+├── build/            # Packaging files
 │   └── debian/       # Debian packaging files
 └── docs/             # Documentation (this directory)
 ```
